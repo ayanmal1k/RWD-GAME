@@ -4,6 +4,8 @@ import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine } from '@/lib/retro-climber';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { db } from '@/lib/firebase';
+import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 import {
   Pause,
   Volume2,
@@ -26,6 +28,30 @@ export default function Home() {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Save user to Firestore when they connect
+  useEffect(() => {
+    const saveUser = async () => {
+      if (primaryWallet?.address) {
+        const address = primaryWallet.address;
+        try {
+          const userRef = doc(db, 'users', address);
+          const userSnap = await getDoc(userRef);
+          
+          if (!userSnap.exists()) {
+            await setDoc(userRef, {
+              address: address,
+              createdAt: serverTimestamp(),
+            });
+            console.log("New user registered:", address);
+          }
+        } catch (error) {
+          console.error("Firebase save error:", error);
+        }
+      }
+    };
+    saveUser();
+  }, [primaryWallet?.address]);
 
   useEffect(() => {
     if (typeof window !== 'undefined') {

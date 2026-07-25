@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
 import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 
@@ -25,27 +25,34 @@ export async function POST(request: Request) {
 
     // Fetch user record from Firestore
     const userRef = doc(db, 'users', userAddress);
-    const userSnap = await getDoc(userRef);
+    let userSnap = await getDoc(userRef);
 
     if (!userSnap.exists()) {
-      return NextResponse.json({ error: 'User record not found' }, { status: 404 });
+      await setDoc(userRef, {
+        address: userAddress,
+        totalCoins: 0,
+        createdAt: serverTimestamp(),
+      });
+      userSnap = await getDoc(userRef);
     }
 
     const userData = userSnap.data();
-    const currentBankCoins = Number(userData.totalCoins || 0);
+    const currentBankCoins = Number(userData?.totalCoins || 0);
 
     if (currentBankCoins < coinsToExchange) {
       return NextResponse.json(
-        { error: `Insufficient banked coins. You have ${currentBankCoins} coins.` },
+        { error: `Insufficient banked coins. You currently have ${currentBankCoins} coins in your bank.` },
         { status: 400 }
       );
     }
 
     // Exchange Ratio: 10 Coins = 1 Token
-    const tokensPaid = Math.floor(coinsToExchange / 10);
+    const tokensPaid = Number((coinsToExchange / 10).toFixed(4));
 
     let txSignature = `SimulatedTx_${Math.random().toString(36).slice(2, 12)}_${Date.now()}`;
     let isSimulated = true;
+    let payoutAsset = '$REAL';
+    let payoutAmount = tokensPaid;
 
     // Check if real Treasury Private Key exists in environment
     const treasuryKeySecret = process.env.TREASURY_SOLANA_PRIVATE_KEY;
@@ -78,10 +85,13 @@ export async function POST(request: Request) {
             connection,
             treasuryKeypair,
             mintPubKey,
-            recipientPubKey
+            recipientPubKey,
+            false,
+            'confirmed'
           );
 
-          const amountInRaw = tokensPaid * (10 ** 6); // Assuming 6 decimals, or adjusted to token decimals
+          // Assuming standard 6 decimals or raw amount calculation
+          const amountInRaw = Math.round(tokensPaid * (10 ** 6));
 
           txSignature = await transferSPL(
             connection,
@@ -92,12 +102,22 @@ export async function POST(request: Request) {
             amountInRaw
           );
           isSimulated = false;
+          payoutAsset = '$REAL';
+          payoutAmount = tokensPaid;
           console.log(`[SOLANA TREASURY SPL PAYOUT SUCCESS] Tx: ${txSignature}`);
         } catch (tokenErr: any) {
           console.warn('SPL token transfer failed, attempting native SOL fallback payout:', tokenErr?.message || tokenErr);
           
-          // Fallback to native transfer (0.0001 SOL per token)
-          const lamportsToTransfer = Math.max(1000, tokensPaid * 10000);
+          // Rent-exemption minimum on Solana (approx 890,880 lamports ~ 0.00089 SOL)
+          const rentExemptMin = await connection.getMinimumBalanceForRentExemption(0);
+          const recipientAccount = await connection.getAccountInfo(recipientPubKey);
+          const recipientBalance = recipientAccount ? recipientAccount.lamports : 0;
+
+          let lamportsToTransfer = Math.round(tokensPaid * 100000); // Base 0.0001 SOL per token
+          if (recipientBalance + lamportsToTransfer < rentExemptMin) {
+            lamportsToTransfer = Math.max(lamportsToTransfer, rentExemptMin - recipientBalance + 5000);
+          }
+
           const transaction = new Transaction().add(
             SystemProgram.transfer({
               fromPubkey: treasuryKeypair.publicKey,
@@ -108,7 +128,9 @@ export async function POST(request: Request) {
 
           txSignature = await sendAndConfirmTransaction(connection, transaction, [treasuryKeypair]);
           isSimulated = false;
-          console.log(`[SOLANA TREASURY SOL PAYOUT SUCCESS] Tx: ${txSignature}`);
+          payoutAsset = 'SOL';
+          payoutAmount = Number((lamportsToTransfer / 1e9).toFixed(6));
+          console.log(`[SOLANA TREASURY SOL PAYOUT SUCCESS] Tx: ${txSignature}, Amount: ${payoutAmount} SOL`);
         }
       } catch (err: any) {
         console.warn('Real Solana payout transaction failed, falling back to simulated verification tx:', err?.message || err);
@@ -128,6 +150,8 @@ export async function POST(request: Request) {
       userAddress,
       coinsAmount: coinsToExchange,
       tokensAmount: tokensPaid,
+      payoutAmount,
+      payoutAsset,
       txSignature,
       isSimulated,
       status: 'COMPLETED',
@@ -139,6 +163,8 @@ export async function POST(request: Request) {
       withdrawalId: withdrawDoc.id,
       coinsExchanged: coinsToExchange,
       tokensPaid,
+      payoutAmount,
+      payoutAsset,
       txSignature,
       isSimulated,
       remainingCoins: currentBankCoins - coinsToExchange,

@@ -22,6 +22,8 @@ interface WithdrawalRecord {
   id: string;
   coinsAmount: number;
   tokensAmount: number;
+  payoutAmount?: number;
+  payoutAsset?: string;
   txSignature: string;
   isSimulated?: boolean;
   status: string;
@@ -282,7 +284,12 @@ export default function WithdrawPage() {
                   <div className="flex items-center gap-2 text-yellow-400 font-bold font-press-start text-[11px]">
                     <CheckCircle2 className="w-4 h-4 text-yellow-400" /> WITHDRAWAL SUCCESSFUL!
                   </div>
-                  <p>Exchanged {txSuccess.coinsExchanged} coins for {txSuccess.tokensPaid} $REAL tokens.</p>
+                  <p>
+                    Exchanged <span className="font-bold text-yellow-300">{txSuccess.coinsExchanged}</span> coins for{' '}
+                    <span className="font-bold text-yellow-300">
+                      {txSuccess.payoutAmount ?? txSuccess.tokensPaid} {txSuccess.payoutAsset || '$REAL'}
+                    </span>.
+                  </p>
                   <div className="pt-1 flex items-center gap-1 text-[10px] text-amber-400 font-mono">
                     <span>Transaction Signature:</span>
                     <a
@@ -301,10 +308,10 @@ export default function WithdrawPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting || coinsNum < 1000 || coinsNum > bankCoins}
+              disabled={isSubmitting || coinsNum <= 0 || coinsNum > bankCoins}
               className="w-full py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs sm:text-sm rounded-2xl shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.01] active:scale-[0.99]"
             >
-              {isSubmitting ? 'PROCESSING TREASURY TRANSACTION...' : 'EXCHANGE & WITHDRAW NOW'}
+              {isSubmitting ? 'PROCESSING TREASURY TRANSACTION...' : !address ? 'CONNECT WALLET TO WITHDRAW' : 'EXCHANGE & WITHDRAW NOW'}
             </button>
           </form>
         </div>
@@ -330,7 +337,7 @@ export default function WithdrawPage() {
                 <thead>
                   <tr className="text-amber-400/70 border-b border-yellow-500/10 text-[10px] uppercase">
                     <th className="pb-3">COINS EXCHANGED</th>
-                    <th className="pb-3">TOKENS PAID</th>
+                    <th className="pb-3">PAYOUT RECEIVED</th>
                     <th className="pb-3">STATUS</th>
                     <th className="pb-3 text-right">SOLANA TX</th>
                   </tr>
@@ -339,7 +346,9 @@ export default function WithdrawPage() {
                   {history.map((rec) => (
                     <tr key={rec.id} className="hover:bg-yellow-500/5 transition-colors">
                       <td className="py-3 font-bold text-yellow-300">{rec.coinsAmount} COINS</td>
-                      <td className="py-3 font-bold text-amber-400">{rec.tokensAmount} $REAL</td>
+                      <td className="py-3 font-bold text-amber-400">
+                        {rec.payoutAmount ?? rec.tokensAmount} {rec.payoutAsset || '$REAL'}
+                      </td>
                       <td className="py-3">
                         <span className="px-2 py-0.5 rounded-full text-[9px] bg-yellow-500/20 text-yellow-300 font-bold border border-yellow-500/30">
                           {rec.status}

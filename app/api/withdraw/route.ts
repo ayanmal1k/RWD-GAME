@@ -4,6 +4,10 @@ import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp, increment 
 import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 
+import { getOrCreateAssociatedTokenAccount, transfer as transferSPL } from '@solana/spl-token';
+
+const TOKEN_MINT_ADDRESS = process.env.REAL_TOKEN_MINT_ADDRESS || process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS || 'BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -15,8 +19,8 @@ export async function POST(request: Request) {
 
     const coinsToExchange = Number(amountCoins);
 
-    if (isNaN(coinsToExchange) || coinsToExchange < 1000) {
-      return NextResponse.json({ error: 'Minimum withdrawal is 1,000 coins' }, { status: 400 });
+    if (isNaN(coinsToExchange) || coinsToExchange <= 0) {
+      return NextResponse.json({ error: 'Please enter a valid amount of coins to withdraw' }, { status: 400 });
     }
 
     // Fetch user record from Firestore
@@ -37,8 +41,8 @@ export async function POST(request: Request) {
       );
     }
 
-    // Exchange Ratio: 1,000 Coins = 100 Tokens (10 coins = 1 token)
-    const tokensPaid = Math.floor((coinsToExchange / 1000) * 100);
+    // Exchange Ratio: 10 Coins = 1 Token
+    const tokensPaid = Math.floor(coinsToExchange / 10);
 
     let txSignature = `SimulatedTx_${Math.random().toString(36).slice(2, 12)}_${Date.now()}`;
     let isSimulated = true;
@@ -47,11 +51,11 @@ export async function POST(request: Request) {
     const treasuryKeySecret = process.env.TREASURY_SOLANA_PRIVATE_KEY;
     const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
 
-    if (treasuryKeySecret) {
+    if (treasuryKeySecret && treasuryKeySecret.trim().length > 0) {
       try {
         let secretKey: Uint8Array;
         if (treasuryKeySecret.trim().startsWith('[')) {
-          secretKey = Uint8Array.from(JSON.parse(treasuryKeySecret));
+          secretKey = Uint8Array.from(JSON.parse(treasuryKeySecret.trim()));
         } else {
           secretKey = bs58.decode(treasuryKeySecret.trim());
         }
@@ -59,21 +63,53 @@ export async function POST(request: Request) {
         const treasuryKeypair = Keypair.fromSecretKey(secretKey);
         const connection = new Connection(rpcUrl, 'confirmed');
         const recipientPubKey = new PublicKey(userAddress);
+        const mintPubKey = new PublicKey(TOKEN_MINT_ADDRESS);
 
-        // Convert tokens to lamports/SOL equivalent if needed (e.g. 0.001 SOL per 100 tokens as test payout)
-        const lamportsToTransfer = 1000000; // 0.001 SOL
+        try {
+          // Attempt SPL token transfer
+          const fromTokenAccount = await getOrCreateAssociatedTokenAccount(
+            connection,
+            treasuryKeypair,
+            mintPubKey,
+            treasuryKeypair.publicKey
+          );
 
-        const transaction = new Transaction().add(
-          SystemProgram.transfer({
-            fromPubkey: treasuryKeypair.publicKey,
-            toPubkey: recipientPubKey,
-            lamports: lamportsToTransfer,
-          })
-        );
+          const toTokenAccount = await getOrCreateAssociatedTokenAccount(
+            connection,
+            treasuryKeypair,
+            mintPubKey,
+            recipientPubKey
+          );
 
-        txSignature = await sendAndConfirmTransaction(connection, transaction, [treasuryKeypair]);
-        isSimulated = false;
-        console.log(`[SOLANA TREASURY PAYOUT SUCCESS] Tx: ${txSignature}`);
+          const amountInRaw = tokensPaid * (10 ** 6); // Assuming 6 decimals, or adjusted to token decimals
+
+          txSignature = await transferSPL(
+            connection,
+            treasuryKeypair,
+            fromTokenAccount.address,
+            toTokenAccount.address,
+            treasuryKeypair,
+            amountInRaw
+          );
+          isSimulated = false;
+          console.log(`[SOLANA TREASURY SPL PAYOUT SUCCESS] Tx: ${txSignature}`);
+        } catch (tokenErr: any) {
+          console.warn('SPL token transfer failed, attempting native SOL fallback payout:', tokenErr?.message || tokenErr);
+          
+          // Fallback to native transfer (0.0001 SOL per token)
+          const lamportsToTransfer = Math.max(1000, tokensPaid * 10000);
+          const transaction = new Transaction().add(
+            SystemProgram.transfer({
+              fromPubkey: treasuryKeypair.publicKey,
+              toPubkey: recipientPubKey,
+              lamports: lamportsToTransfer,
+            })
+          );
+
+          txSignature = await sendAndConfirmTransaction(connection, transaction, [treasuryKeypair]);
+          isSimulated = false;
+          console.log(`[SOLANA TREASURY SOL PAYOUT SUCCESS] Tx: ${txSignature}`);
+        }
       } catch (err: any) {
         console.warn('Real Solana payout transaction failed, falling back to simulated verification tx:', err?.message || err);
       }

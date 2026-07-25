@@ -43,7 +43,7 @@ export default function WithdrawPage() {
 
   // Calculate estimated tokens (10 coins = 1 token)
   const coinsNum = Number(exchangeCoins) || 0;
-  const estimatedTokens = Math.floor(coinsNum / 10);
+  const estimatedTokens = coinsNum > 0 ? (coinsNum / 10) : 0;
 
   // Subscribe to user bank balance
   useEffect(() => {
@@ -71,22 +71,11 @@ export default function WithdrawPage() {
     if (!address) return;
     setIsLoadingHistory(true);
     try {
-      let snapshot;
-      try {
-        const q = query(
-          collection(db, 'withdrawals'),
-          where('userAddress', '==', address),
-          orderBy('createdAt', 'desc')
-        );
-        snapshot = await getDocs(q);
-      } catch (indexErr) {
-        console.warn('Composite index fallback triggered:', indexErr);
-        const qFallback = query(
-          collection(db, 'withdrawals'),
-          where('userAddress', '==', address)
-        );
-        snapshot = await getDocs(qFallback);
-      }
+      const q = query(
+        collection(db, 'withdrawals'),
+        where('userAddress', '==', address)
+      );
+      const snapshot = await getDocs(q);
 
       const records: WithdrawalRecord[] = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -122,8 +111,8 @@ export default function WithdrawPage() {
       return;
     }
 
-    if (coinsNum < 1000) {
-      setErrorMsg('Minimum withdrawal threshold is 1,000 coins.');
+    if (coinsNum <= 0) {
+      setErrorMsg('Please enter a valid amount of coins to withdraw.');
       return;
     }
 
@@ -173,6 +162,21 @@ export default function WithdrawPage() {
           <p className="text-xs sm:text-sm font-mono text-amber-200/70 max-w-xl mx-auto">
             Convert your hard-earned climbing coins into $REAL tokens. Paid directly from our Solana treasury wallet.
           </p>
+
+          {/* $REAL Token Address Display */}
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#171206] border border-yellow-500/30 rounded-xl text-xs font-mono text-amber-300">
+            <span className="text-[10px] text-amber-400 font-bold uppercase">$REAL MINT:</span>
+            <span className="font-bold text-yellow-300 select-all font-mono">BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv</span>
+            <a 
+              href="https://solscan.io/token/BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv" 
+              target="_blank" 
+              rel="noopener noreferrer" 
+              className="text-amber-400 hover:text-yellow-200 ml-1 inline-flex items-center"
+              title="View on Solscan"
+            >
+              <ExternalLink className="w-3.5 h-3.5" />
+            </a>
+          </div>
         </div>
 
         {/* Live Balance Card */}
@@ -220,18 +224,18 @@ export default function WithdrawPage() {
               {/* Input Coins */}
               <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-4 space-y-2">
                 <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <CoinIcon className="w-4 h-4" /> COINS TO WITHDRAW (MIN: 1,000)
+                  <CoinIcon className="w-4 h-4" /> COINS TO WITHDRAW
                 </label>
                 <div className="flex items-center gap-2">
                   <CoinIcon className="w-6 h-6" />
                   <input
                     type="number"
-                    min="1000"
-                    step="100"
+                    min="1"
+                    step="1"
                     value={exchangeCoins}
                     onChange={(e) => setExchangeCoins(e.target.value)}
                     className="w-full bg-transparent font-mono text-xl font-bold text-yellow-200 focus:outline-none placeholder-yellow-500/30"
-                    placeholder="1000"
+                    placeholder="Enter coins"
                   />
                 </div>
               </div>

@@ -24,6 +24,14 @@ export function ConnectWalletButton() {
     }
   };
 
+  const handleDisconnect = async () => {
+    try {
+      await handleLogOut();
+    } catch (e) {
+      console.warn('Silent logout error caught:', e);
+    }
+  };
+
   return (
     <div className="fixed top-4 right-4 z-[100] flex items-center justify-end">
       {!isConnected ? (
@@ -62,7 +70,7 @@ export function ConnectWalletButton() {
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
-            onClick={() => handleLogOut()}
+            onClick={handleDisconnect}
             className="p-2.5 bg-white/5 hover:bg-red-500/20 border border-white/10 hover:border-red-500/40 rounded-full transition-all duration-300 group cursor-pointer backdrop-blur-md"
             title="Disconnect"
           >

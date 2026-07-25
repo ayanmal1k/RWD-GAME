@@ -10,11 +10,11 @@
  * - Parallax scrolling background (ground.png at bottom, sky.png stacked above)
  */
 
-export interface GameCallbacks {
+export interface GameEngineCallbacks {
   onScoreChange: (score: number) => void;
   onCoinChange: (coins: number) => void;
-  onGameOver: (finalScore: number) => void;
   onStateChange: (state: 'START' | 'PLAYING' | 'PAUSED' | 'GAME_OVER') => void;
+  onGameOver: (finalScore: number, finalCoins: number, durationSeconds: number) => void;
 }
 
 type PlatformType = 'STANDARD' | 'MOVING' | 'CRUMBLING' | 'SPRING';
@@ -284,7 +284,7 @@ class SoundSystem {
 export class GameEngine {
   private canvas: HTMLCanvasElement;
   private ctx: CanvasRenderingContext2D;
-  private callbacks: GameCallbacks;
+  private callbacks: GameEngineCallbacks;
 
   // Assets
   private walkSprite = new Image();
@@ -352,8 +352,9 @@ export class GameEngine {
   // Screen shake
   private shakeTime = 0;
   private shakeAmount = 0;
+  private gameStartTime = 0;
 
-  constructor(canvas: HTMLCanvasElement, callbacks: GameCallbacks) {
+  constructor(canvas: HTMLCanvasElement, callbacks: GameEngineCallbacks) {
     this.canvas = canvas;
     const context = canvas.getContext('2d');
     if (!context) throw new Error('Could not get Canvas 2D Context');
@@ -569,6 +570,7 @@ export class GameEngine {
   public startGame() {
     if (this.state === 'START' || this.state === 'GAME_OVER') {
       this.resetGame();
+      this.gameStartTime = Date.now();
       this.state = 'PLAYING';
       this.callbacks.onStateChange(this.state);
       this.audio.playJump();
@@ -615,7 +617,8 @@ export class GameEngine {
     this.callbacks.onStateChange(this.state);
     this.audio.stopMusic();
     this.audio.playGameOver();
-    this.callbacks.onGameOver(this.score);
+    const durationSeconds = Math.max(1, Math.round((Date.now() - (this.gameStartTime || Date.now())) / 1000));
+    this.callbacks.onGameOver(this.score, this.coinsCount, durationSeconds);
     if (this.animId) cancelAnimationFrame(this.animId);
     this.drawGameOverScreen();
   }

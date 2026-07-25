@@ -5,15 +5,28 @@ import { GameEngine } from '@/lib/retro-climber';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
 import {
   Pause,
   Volume2,
   VolumeX,
   Trophy,
   Maximize2,
-  Minimize2
+  Minimize2,
+  History,
+  Clock,
+  Coins,
+  X
 } from 'lucide-react';
+
+interface GameHistoryItem {
+  id: string;
+  userAddress: string;
+  score: number;
+  coins: number;
+  durationSeconds: number;
+  createdAt?: any;
+}
 
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
@@ -28,6 +41,11 @@ export default function Home() {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+
+  // Game History Modal state
+  const [showHistoryModal, setShowHistoryModal] = useState(false);
+  const [historyLogs, setHistoryLogs] = useState<GameHistoryItem[]>([]);
+  const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
   // Save user to Firestore when they connect
   useEffect(() => {
@@ -52,6 +70,28 @@ export default function Home() {
     };
     saveUser();
   }, [primaryWallet?.address]);
+
+  const fetchHistory = async () => {
+    setIsLoadingHistory(true);
+    try {
+      const q = query(collection(db, 'game_history'), orderBy('createdAt', 'desc'), limit(10));
+      const snapshot = await getDocs(q);
+      const logs: GameHistoryItem[] = snapshot.docs.map((doc) => ({
+        id: doc.id,
+        ...doc.data(),
+      })) as GameHistoryItem[];
+      setHistoryLogs(logs);
+    } catch (err) {
+      console.error("Failed to fetch game history:", err);
+    } finally {
+      setIsLoadingHistory(false);
+    }
+  };
+
+  const handleOpenHistory = () => {
+    setShowHistoryModal(true);
+    fetchHistory();
+  };
 
   useEffect(() => {
     if (typeof window !== 'undefined') {
@@ -85,11 +125,30 @@ export default function Home() {
       onScoreChange: (newScore) => setScore(newScore),
       onCoinChange: (newCoins) => setCoins(newCoins),
       onStateChange: (state) => setGameState(state),
-      onGameOver: (finalScore) => {
+      onGameOver: (finalScore, finalCoins, durationSeconds) => {
         const currentHigh = parseInt(localStorage.getItem('omu_crazy_climber_high_score') || '0', 10);
         if (finalScore > currentHigh) {
           localStorage.setItem('omu_crazy_climber_high_score', finalScore.toString());
           setHighScore(finalScore);
+        }
+
+        // Save game history to Firestore
+        if (primaryWallet?.address) {
+          const saveRun = async () => {
+            try {
+              await addDoc(collection(db, 'game_history'), {
+                userAddress: primaryWallet.address,
+                score: finalScore,
+                coins: finalCoins,
+                durationSeconds: durationSeconds,
+                createdAt: serverTimestamp(),
+              });
+              console.log("Game history saved to Firestore!");
+            } catch (e) {
+              console.error("Error saving game history:", e);
+            }
+          };
+          saveRun();
         }
       }
     });
@@ -100,7 +159,7 @@ export default function Home() {
     return () => {
       engine.cleanUp();
     };
-  }, []);
+  }, [primaryWallet?.address]);
 
   useEffect(() => {
     if (engineRef.current) {
@@ -218,12 +277,21 @@ export default function Home() {
                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-3 bg-black/40 rounded-[50%] blur-sm animate-shadow-breathe"></div>
                  </div>
 
-                 <button 
-                   onClick={handlePlayClick}
-                   className="px-8 py-4 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-sm sm:text-base rounded-2xl border-4 border-[#81c784] shadow-[0_0_20px_rgba(76,175,80,0.5)] hover:shadow-[0_0_30px_rgba(76,175,80,0.8)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
-                 >
-                   {primaryWallet ? "PLAY NOW" : "CONNECT TO PLAY"}
-                 </button>
+                 <div className="flex flex-col sm:flex-row gap-3">
+                   <button 
+                     onClick={handlePlayClick}
+                     className="px-8 py-4 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-xs sm:text-sm rounded-2xl border-4 border-[#81c784] shadow-[0_0_20px_rgba(76,175,80,0.5)] hover:shadow-[0_0_30px_rgba(76,175,80,0.8)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                   >
+                     {primaryWallet ? "PLAY NOW" : "CONNECT TO PLAY"}
+                   </button>
+                   <button 
+                     onClick={handleOpenHistory}
+                     className="px-5 py-4 bg-[#103a15]/80 hover:bg-[#1b5e20] text-[#81c784] font-bold font-press-start text-xs rounded-2xl border-2 border-[#4caf50]/40 flex items-center justify-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                   >
+                     <History className="w-4 h-4" />
+                     HISTORY
+                   </button>
+                 </div>
                  {isMobile && !isFullscreen && (
                    <p className="mt-4 text-[9px] font-mono text-[#70a080]">Game will launch in fullscreen mode.</p>
                  )}
@@ -241,12 +309,69 @@ export default function Home() {
 
             {/* GAME OVER OVERLAY */}
             {gameState === 'GAME_OVER' && (
-              <div className="absolute inset-0 bg-[#020a05]/90 flex flex-col items-center justify-center p-6 text-center text-white">
+              <div className="absolute inset-0 bg-[#020a05]/90 flex flex-col items-center justify-center p-6 text-center text-white z-40">
                 <h2 className="text-xl font-extrabold font-press-start text-[#d04030] mb-2 drop-shadow-md">FELL!</h2>
                 <p className="text-[9px] font-press-start text-[#70a080] mt-1 mb-1">SCORE: {score}</p>
-                <p className="text-[9px] font-press-start text-[#81c784] mb-5">COINS: {coins}</p>
-                <p className="text-[7px] font-mono text-[#407050] mb-3">Press W / ▲ / Space to retry</p>
-                <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#4caf50]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">TRY AGAIN</button>
+                <p className="text-[9px] font-press-start text-[#81c784] mb-4">COINS: {coins}</p>
+                <div className="flex gap-2 mb-3">
+                  <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#4caf50]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">TRY AGAIN</button>
+                  <button onClick={handleOpenHistory} className="px-4 py-2.5 bg-[#103a15] hover:bg-[#1b5e20] text-[#81c784] font-bold font-press-start text-[10px] rounded-xl border border-[#4caf50]/40 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"><History className="w-3.5 h-3.5" /> HISTORY</button>
+                </div>
+              </div>
+            )}
+
+            {/* HISTORY MODAL */}
+            {showHistoryModal && (
+              <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
+                <div className="w-full max-w-lg bg-[#051a0a] border-2 border-[#4caf50]/40 rounded-3xl p-6 shadow-[0_0_50px_rgba(76,175,80,0.3)] text-white relative flex flex-col max-h-[85vh]">
+                  <div className="flex items-center justify-between pb-4 border-b border-[#4caf50]/20 mb-4">
+                    <div className="flex items-center gap-2">
+                      <History className="w-5 h-5 text-[#81c784]" />
+                      <h3 className="text-sm font-bold font-press-start text-[#81c784]">GAME HISTORY</h3>
+                    </div>
+                    <button 
+                      onClick={() => setShowHistoryModal(false)}
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                    >
+                      <X className="w-5 h-5 text-white/70" />
+                    </button>
+                  </div>
+
+                  <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                    {isLoadingHistory ? (
+                      <div className="py-12 text-center text-xs font-mono text-[#70a080] animate-pulse">
+                        Loading game logs from Firestore...
+                      </div>
+                    ) : historyLogs.length === 0 ? (
+                      <div className="py-12 text-center text-xs font-mono text-[#70a080]">
+                        No game history recorded yet. Play a run!
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {historyLogs.map((item, idx) => (
+                          <div 
+                            key={item.id || idx}
+                            className="bg-[#0a2612]/70 border border-[#4caf50]/20 rounded-xl p-3 flex items-center justify-between text-xs font-mono"
+                          >
+                            <div className="flex flex-col gap-0.5">
+                              <span className="text-[10px] text-[#407050] font-bold">
+                                {item.userAddress ? `${item.userAddress.slice(0, 4)}...${item.userAddress.slice(-4)}` : 'Anonymous'}
+                              </span>
+                              <div className="flex items-center gap-3 text-white font-bold">
+                                <span className="text-[#81c784] font-press-start text-[10px]">{item.score} PTS</span>
+                                <span className="flex items-center gap-1 text-yellow-400 text-[10px]"><Coins className="w-3 h-3" /> {item.coins}</span>
+                              </div>
+                            </div>
+                            <div className="flex items-center gap-1.5 text-[10px] text-[#70a080] bg-black/30 px-2.5 py-1 rounded-lg border border-white/5">
+                              <Clock className="w-3 h-3 text-[#4caf50]" />
+                              <span>{item.durationSeconds}s</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
               </div>
             )}
 

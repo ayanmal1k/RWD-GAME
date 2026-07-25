@@ -47,7 +47,41 @@ export default function Home() {
   const [historyLogs, setHistoryLogs] = useState<GameHistoryItem[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
+  // Leaderboard Modal state
+  const [showLeaderboardModal, setShowLeaderboardModal] = useState(false);
+  const [leaderboardData, setLeaderboardData] = useState<{
+    enabled: boolean;
+    startDate?: string;
+    endDate?: string;
+    topPlayers: Array<{ rank: number; userAddress: string; score: number; coins: number; durationSeconds: number }>;
+  } | null>(null);
+  const [isLoadingLeaderboard, setIsLoadingLeaderboard] = useState(false);
+
   const activeSessionRef = useRef<{ sessionId: string; token: string } | null>(null);
+
+  const fetchLeaderboard = async () => {
+    setIsLoadingLeaderboard(true);
+    try {
+      const res = await fetch('/api/leaderboard');
+      const data = await res.json();
+      if (res.ok) {
+        setLeaderboardData(data);
+      }
+    } catch (err) {
+      console.error('Failed to fetch leaderboard:', err);
+    } finally {
+      setIsLoadingLeaderboard(false);
+    }
+  };
+
+  const handleOpenLeaderboard = () => {
+    setShowLeaderboardModal(true);
+    fetchLeaderboard();
+  };
+
+  useEffect(() => {
+    fetchLeaderboard();
+  }, []);
 
   // Save user to Firestore when they connect
   useEffect(() => {
@@ -255,36 +289,26 @@ export default function Home() {
   };
 
   return (
-    <main className={`${isFullscreen ? 'overflow-hidden' : 'min-h-screen'} w-full bg-gradient-to-b from-[#051a0a] via-[#0a2d14] to-[#051a0a] text-[#d4e8d5] antialiased font-sans`}>
-      <ConnectWalletButton />
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(30,120,40,0.3),transparent_60%)] pointer-events-none" />
+    <main className={`${isFullscreen ? 'overflow-hidden' : 'min-h-screen'} w-full bg-gradient-to-b from-[#0a0802] via-[#171206] to-[#0a0802] text-[#fef08a] antialiased font-sans pb-12`}>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(234,179,8,0.15),transparent_60%)] pointer-events-none" />
 
       {/* Normal page header & highscore (hidden in fullscreen) */}
       {!isFullscreen && (
-        <div className="flex flex-col items-center p-4 sm:px-8 sm:pt-8 sm:pb-0">
-          <header className="mb-5 text-center select-none z-10 flex flex-col items-center gap-1">
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-r from-[#4caf50] via-[#81c784] to-[#4caf50] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-              $REAL Mountain Climber
-            </h1>
-            <p className="text-[9px] sm:text-xs font-bold text-[#50a060]/80 tracking-widest uppercase font-mono">
-              How high can you climb?
-            </p>
-          </header>
-
-          <div className="w-full max-w-xl flex flex-col items-center gap-4 z-10">
+        <div className="flex flex-col items-center p-4 sm:px-8 sm:pt-6 sm:pb-2">
+          <div className="w-full max-w-xl flex flex-col items-center gap-2 z-10">
             <div className="w-full text-center">
-              <span className="text-[9px] font-press-start text-[#407050] tracking-widest uppercase">
-                Best Score: <span className="text-[#81c784]">{highScore}</span>
+              <span className="text-[10px] font-press-start text-amber-400 tracking-widest uppercase">
+                BEST SCORE: <span className="text-yellow-300 font-extrabold">{highScore}</span>
               </span>
             </div>
           </div>
         </div>
       )}
 
-      {/* Game canvas - always rendered in DOM, only styling changes */}
-      <div className={isFullscreen ? 'fixed inset-0 z-50 bg-[#051a0a] flex items-center justify-center overflow-hidden' : 'w-full max-w-xl mx-auto px-4 pb-4'}>
-        <div className={isFullscreen ? 'relative' : 'w-full relative bg-[#050d08] rounded-2xl p-2 shadow-[0_16px_32px_rgba(0,0,0,0.6)] border-2 border-[#103a15] overflow-hidden'} style={isFullscreen ? { width: 'min(100%, calc(100vh * 3 / 4))', aspectRatio: '3/4' } : undefined}>
-          <div className={`relative overflow-hidden bg-[#0a120a] ${isFullscreen ? 'w-full h-full rounded-none' : 'aspect-[3/4] rounded-xl'}`}>
+      {/* Game canvas */}
+      <div className={isFullscreen ? 'fixed inset-0 z-50 bg-[#0a0802] flex items-center justify-center overflow-hidden' : 'w-full max-w-xl mx-auto px-4 pb-4'}>
+        <div className={isFullscreen ? 'relative' : 'w-full relative bg-[#171206] rounded-3xl p-2 shadow-[0_16px_40px_rgba(0,0,0,0.8)] border-2 border-yellow-500/30 overflow-hidden'} style={isFullscreen ? { width: 'min(100%, calc(100vh * 3 / 4))', aspectRatio: '3/4' } : undefined}>
+          <div className={`relative overflow-hidden bg-[#0d0903] ${isFullscreen ? 'w-full h-full rounded-none' : 'aspect-[3/4] rounded-2xl'}`}>
             <canvas
               ref={canvasRef}
               width={480}
@@ -294,8 +318,8 @@ export default function Home() {
 
             {/* START OVERLAY */}
             {gameState === 'START' && (
-              <div className="absolute inset-0 bg-[#051a0a] flex flex-col items-center justify-center p-6 text-center text-white z-40">
-                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-b from-[#81c784] to-[#4caf50] drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] mb-8">
+              <div className="absolute inset-0 bg-[#0a0802] flex flex-col items-center justify-center p-6 text-center text-white z-40">
+                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-amber-400 to-yellow-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] mb-8">
                    $REAL CLIMBER
                  </h1>
 
@@ -303,78 +327,108 @@ export default function Home() {
                    <img 
                      src="/idle.png" 
                      alt="Character Idle" 
-                     className="w-full h-full object-contain pixelated animate-breathe"
+                     className="w-full h-full object-contain pixelated animate-breathe drop-shadow-[0_0_15px_rgba(250,204,21,0.3)]"
                    />
-                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-3 bg-black/40 rounded-[50%] blur-sm animate-shadow-breathe"></div>
+                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-3 bg-black/60 rounded-[50%] blur-sm animate-shadow-breathe"></div>
                  </div>
 
                  <div className="flex flex-col sm:flex-row gap-3">
                    <button 
                      onClick={handlePlayClick}
-                     className="px-8 py-4 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-xs sm:text-sm rounded-2xl border-4 border-[#81c784] shadow-[0_0_20px_rgba(76,175,80,0.5)] hover:shadow-[0_0_30px_rgba(76,175,80,0.8)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                     className="px-8 py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs sm:text-sm rounded-2xl border-4 border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.5)] hover:shadow-[0_0_35px_rgba(234,179,8,0.8)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
                    >
                      {primaryWallet ? "PLAY NOW" : "CONNECT TO PLAY"}
                    </button>
                    <button 
                      onClick={handleOpenHistory}
-                     className="px-5 py-4 bg-[#103a15]/80 hover:bg-[#1b5e20] text-[#81c784] font-bold font-press-start text-xs rounded-2xl border-2 border-[#4caf50]/40 flex items-center justify-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                     className="px-5 py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-xs rounded-2xl border-2 border-yellow-500/40 flex items-center justify-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
                    >
-                     <History className="w-4 h-4" />
+                     <History className="w-4 h-4 text-amber-400" />
                      HISTORY
                    </button>
+                   <button 
+                     onClick={handleOpenLeaderboard}
+                     className="px-5 py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-xs rounded-2xl border-2 border-yellow-500/40 flex items-center justify-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                   >
+                     <Trophy className="w-4 h-4 text-yellow-400" />
+                     LEADERBOARD
+                   </button>
                  </div>
+
+                 {/* EMBEDDED LEADERBOARD PREVIEW (BELOW BUTTONS) */}
+                 {leaderboardData && leaderboardData.enabled && (
+                   <div className="mt-6 w-full max-w-sm bg-[#171206]/90 border border-yellow-500/30 rounded-2xl p-3 shadow-lg text-left space-y-2">
+                     <div className="flex items-center justify-between text-[10px] font-press-start text-yellow-400 pb-1 border-b border-yellow-500/15">
+                       <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-yellow-400" /> TOP CLIMBERS</span>
+                       {leaderboardData.startDate && leaderboardData.endDate && (
+                         <span className="text-[8px] font-mono text-amber-400/70">{leaderboardData.startDate} to {leaderboardData.endDate}</span>
+                       )}
+                     </div>
+                     <div className="space-y-1">
+                       {leaderboardData.topPlayers.slice(0, 3).map((player) => (
+                         <div key={player.rank} className="flex items-center justify-between text-[10px] font-mono bg-black/40 px-2.5 py-1 rounded-lg border border-yellow-500/10">
+                           <span className="font-bold text-amber-300">
+                             #{player.rank} {player.userAddress.slice(0, 4)}...{player.userAddress.slice(-4)}
+                           </span>
+                           <span className="font-press-start text-[9px] text-yellow-400">{player.score} PTS</span>
+                         </div>
+                       ))}
+                     </div>
+                   </div>
+                 )}
+
                  {isMobile && !isFullscreen && (
-                   <p className="mt-4 text-[9px] font-mono text-[#70a080]">Game will launch in fullscreen mode.</p>
+                   <p className="mt-4 text-[9px] font-mono text-amber-400/70">Game will launch in fullscreen mode.</p>
                  )}
               </div>
             )}
 
             {/* PAUSED OVERLAY */}
             {gameState === 'PAUSED' && (
-              <div className="absolute inset-0 bg-[#020a05]/85 flex flex-col items-center justify-center p-6 text-center text-white">
-                <h2 className="text-lg font-extrabold font-press-start text-[#81c784] mb-2 animate-pulse">PAUSED</h2>
-                <p className="text-[9px] font-mono text-[#70a080] mb-5">TAKE A BREATH</p>
-                <button onClick={handlePauseResume} className="px-5 py-2.5 bg-gradient-to-r from-[#81c784] to-[#388e3c] hover:from-[#aed581] hover:to-[#4caf50] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#81c784]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">RESUME</button>
+              <div className="absolute inset-0 bg-[#0a0802]/90 flex flex-col items-center justify-center p-6 text-center text-white z-40">
+                <h2 className="text-lg font-extrabold font-press-start text-yellow-400 mb-2 animate-pulse">PAUSED</h2>
+                <p className="text-[9px] font-mono text-amber-200/70 mb-5">TAKE A BREATH</p>
+                <button onClick={handlePauseResume} className="px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-[#0a0802] font-bold font-press-start text-[10px] rounded-xl border-2 border-yellow-300/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">RESUME</button>
               </div>
             )}
 
             {/* GAME OVER OVERLAY */}
             {gameState === 'GAME_OVER' && (
-              <div className="absolute inset-0 bg-[#020a05]/90 flex flex-col items-center justify-center p-6 text-center text-white z-40">
-                <h2 className="text-xl font-extrabold font-press-start text-[#d04030] mb-2 drop-shadow-md">FELL!</h2>
-                <p className="text-[9px] font-press-start text-[#70a080] mt-1 mb-1">SCORE: {score}</p>
-                <p className="text-[9px] font-press-start text-[#81c784] mb-4">COINS: {coins}</p>
+              <div className="absolute inset-0 bg-[#0a0802]/95 flex flex-col items-center justify-center p-6 text-center text-white z-40">
+                <h2 className="text-xl font-extrabold font-press-start text-red-500 mb-2 drop-shadow-md">FELL!</h2>
+                <p className="text-[10px] font-press-start text-amber-400 mt-1 mb-1">SCORE: {score}</p>
+                <p className="text-[10px] font-press-start text-yellow-300 mb-4">COINS: {coins}</p>
                 <div className="flex gap-2 mb-3">
-                  <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#4caf50]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">TRY AGAIN</button>
-                  <button onClick={handleOpenHistory} className="px-4 py-2.5 bg-[#103a15] hover:bg-[#1b5e20] text-[#81c784] font-bold font-press-start text-[10px] rounded-xl border border-[#4caf50]/40 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"><History className="w-3.5 h-3.5" /> HISTORY</button>
+                  <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-[#0a0802] font-bold font-press-start text-[10px] rounded-xl border-2 border-yellow-300/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">TRY AGAIN</button>
+                  <button onClick={handleOpenHistory} className="px-4 py-2.5 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-[10px] rounded-xl border border-yellow-500/40 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"><History className="w-3.5 h-3.5 text-amber-400" /> HISTORY</button>
                 </div>
               </div>
             )}
 
             {/* HISTORY MODAL */}
             {showHistoryModal && (
-              <div className="fixed inset-0 bg-black/80 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
-                <div className="w-full max-w-lg bg-[#051a0a] border-2 border-[#4caf50]/40 rounded-3xl p-6 shadow-[0_0_50px_rgba(76,175,80,0.3)] text-white relative flex flex-col max-h-[85vh]">
-                  <div className="flex items-center justify-between pb-4 border-b border-[#4caf50]/20 mb-4">
+              <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
+                <div className="w-full max-w-lg bg-[#0a0802] border-2 border-yellow-500/40 rounded-3xl p-6 shadow-[0_0_50px_rgba(234,179,8,0.25)] text-white relative flex flex-col max-h-[85vh]">
+                  <div className="flex items-center justify-between pb-4 border-b border-yellow-500/20 mb-4">
                     <div className="flex items-center gap-2">
-                      <History className="w-5 h-5 text-[#81c784]" />
-                      <h3 className="text-sm font-bold font-press-start text-[#81c784]">GAME HISTORY</h3>
+                      <History className="w-5 h-5 text-yellow-400" />
+                      <h3 className="text-xs font-bold font-press-start text-yellow-300">RECENT GAME LOGS</h3>
                     </div>
                     <button 
                       onClick={() => setShowHistoryModal(false)}
-                      className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer"
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-amber-400"
                     >
-                      <X className="w-5 h-5 text-white/70" />
+                      <X className="w-5 h-5" />
                     </button>
                   </div>
 
                   <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
                     {isLoadingHistory ? (
-                      <div className="py-12 text-center text-xs font-mono text-[#70a080] animate-pulse">
+                      <div className="py-12 text-center text-xs font-mono text-amber-400/80 animate-pulse">
                         Loading game logs from Firestore...
                       </div>
                     ) : historyLogs.length === 0 ? (
-                      <div className="py-12 text-center text-xs font-mono text-[#70a080]">
+                      <div className="py-12 text-center text-xs font-mono text-amber-200/50">
                         No game history recorded yet. Play a run!
                       </div>
                     ) : (
@@ -382,20 +436,93 @@ export default function Home() {
                         {historyLogs.map((item, idx) => (
                           <div 
                             key={item.id || idx}
-                            className="bg-[#0a2612]/70 border border-[#4caf50]/20 rounded-xl p-3 flex items-center justify-between text-xs font-mono"
+                            className="bg-[#171206]/80 border border-yellow-500/20 rounded-xl p-3 flex items-center justify-between text-xs font-mono"
                           >
                             <div className="flex flex-col gap-0.5">
-                              <span className="text-[10px] text-[#407050] font-bold">
+                              <span className="text-[10px] text-amber-400/80 font-bold">
                                 {item.userAddress ? `${item.userAddress.slice(0, 4)}...${item.userAddress.slice(-4)}` : 'Anonymous'}
                               </span>
                               <div className="flex items-center gap-3 text-white font-bold">
-                                <span className="text-[#81c784] font-press-start text-[10px]">{item.score} PTS</span>
-                                <span className="flex items-center gap-1 text-yellow-400 text-[10px]"><Coins className="w-3 h-3" /> {item.coins}</span>
+                                <span className="text-yellow-300 font-press-start text-[10px]">{item.score} PTS</span>
+                                <span className="flex items-center gap-1 text-amber-400 text-[10px]"><Coins className="w-3 h-3 text-yellow-400" /> {item.coins}</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-[#70a080] bg-black/30 px-2.5 py-1 rounded-lg border border-white/5">
-                              <Clock className="w-3 h-3 text-[#4caf50]" />
+                            <div className="flex items-center gap-1.5 text-[10px] text-amber-200/70 bg-black/40 px-2.5 py-1 rounded-lg border border-yellow-500/10">
+                              <Clock className="w-3 h-3 text-yellow-400" />
                               <span>{item.durationSeconds}s</span>
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* LEADERBOARD MODAL */}
+            {showLeaderboardModal && (
+              <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
+                <div className="w-full max-w-lg bg-[#0a0802] border-2 border-yellow-500/40 rounded-3xl p-6 shadow-[0_0_50px_rgba(234,179,8,0.25)] text-white relative flex flex-col max-h-[85vh]">
+                  <div className="flex items-center justify-between pb-4 border-b border-yellow-500/20 mb-4">
+                    <div className="flex items-center gap-2">
+                      <Trophy className="w-5 h-5 text-yellow-400" />
+                      <h3 className="text-xs font-bold font-press-start text-yellow-300">CLIMBER LEADERBOARD</h3>
+                    </div>
+                    <button 
+                      onClick={() => setShowLeaderboardModal(false)}
+                      className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-amber-400"
+                    >
+                      <X className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar space-y-3">
+                    {isLoadingLeaderboard ? (
+                      <div className="py-12 text-center text-xs font-mono text-amber-400/80 animate-pulse">
+                        Fetching leaderboard rankings...
+                      </div>
+                    ) : !leaderboardData?.enabled ? (
+                      <div className="py-12 text-center space-y-2">
+                        <Trophy className="w-8 h-8 text-amber-500/40 mx-auto" />
+                        <p className="text-xs font-mono text-amber-200/50">Leaderboard is currently paused by Admin.</p>
+                      </div>
+                    ) : leaderboardData.topPlayers.length === 0 ? (
+                      <div className="py-12 text-center text-xs font-mono text-amber-200/50">
+                        No leaderboard entries yet for this active period.
+                      </div>
+                    ) : (
+                      <div className="flex flex-col gap-2">
+                        {leaderboardData.startDate && leaderboardData.endDate && (
+                          <div className="text-[10px] font-mono text-amber-400/70 bg-[#171206] px-3 py-1.5 rounded-lg border border-yellow-500/20 text-center">
+                            Active Season: <span className="font-bold text-yellow-300">{leaderboardData.startDate}</span> to <span className="font-bold text-yellow-300">{leaderboardData.endDate}</span>
+                          </div>
+                        )}
+                        {leaderboardData.topPlayers.map((player) => (
+                          <div 
+                            key={player.rank}
+                            className={`border rounded-xl p-3 flex items-center justify-between text-xs font-mono transition-all ${
+                              player.rank === 1
+                                ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.2)]'
+                                : 'bg-[#171206]/80 border-yellow-500/20'
+                            }`}
+                          >
+                            <div className="flex items-center gap-3">
+                              <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-press-start text-[10px] font-bold ${
+                                player.rank === 1 ? 'bg-yellow-400 text-black' : player.rank === 2 ? 'bg-amber-300/80 text-black' : player.rank === 3 ? 'bg-amber-600/80 text-white' : 'bg-black/40 text-amber-400/70'
+                              }`}>
+                                #{player.rank}
+                              </span>
+                              <div className="flex flex-col">
+                                <span className="font-bold text-yellow-200">
+                                  {player.userAddress ? `${player.userAddress.slice(0, 4)}...${player.userAddress.slice(-4)}` : 'Anonymous'}
+                                </span>
+                                <span className="text-[10px] text-amber-400/60">{player.durationSeconds}s duration</span>
+                              </div>
+                            </div>
+                            <div className="text-right">
+                              <span className="font-press-start text-[11px] text-yellow-300 block">{player.score} PTS</span>
+                              <span className="text-[10px] text-amber-400 font-bold">{player.coins} Coins</span>
                             </div>
                           </div>
                         ))}

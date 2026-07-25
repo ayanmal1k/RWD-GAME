@@ -25,6 +25,7 @@ export const metadata: Metadata = {
 }
 
 import { DynamicProvider } from '@/components/DynamicProvider';
+import { Navbar } from '@/components/Navbar';
 
 export default function RootLayout({
   children,
@@ -33,8 +34,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${pressStart.variable} ${outfit.variable}`}>
-      <body className="font-sans antialiased">
+      <body className="font-sans antialiased bg-[#0a0802] text-[#fef08a]">
         <DynamicProvider>
+          <Navbar />
           {children}
           <Analytics />
         </DynamicProvider>

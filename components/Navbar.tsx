@@ -4,6 +4,7 @@ import React from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { ConnectWalletButton } from './ConnectWalletButton';
+import { CoinIcon } from './CoinIcon';
 import { Gamepad2, ArrowDownToLine, Trophy, ShieldCheck, Flame } from 'lucide-react';
 
 export function Navbar() {
@@ -22,10 +23,8 @@ export function Navbar() {
           
           {/* Logo & Title */}
           <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-yellow-400 to-amber-300 p-0.5 shadow-[0_0_15px_rgba(250,204,21,0.5)] group-hover:scale-105 transition-transform">
-              <div className="w-full h-full bg-[#0a0802] rounded-[10px] flex items-center justify-center">
-                <Flame className="w-5 h-5 text-yellow-400 fill-yellow-400/20 group-hover:animate-bounce" />
-              </div>
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-xl bg-gradient-to-tr from-amber-600 via-yellow-400 to-amber-300 p-0.5 shadow-[0_0_15px_rgba(250,204,21,0.5)] group-hover:scale-105 transition-transform overflow-hidden">
+              <img src="/logo.jpeg" alt="$REAL Logo" className="w-full h-full object-cover rounded-[10px] group-hover:scale-110 transition-transform" />
             </div>
             <div className="flex flex-col">
               <span className="font-press-start text-xs sm:text-sm font-extrabold tracking-wider text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 drop-shadow-[0_2px_4px_rgba(0,0,0,0.8)]">

@@ -16,6 +16,7 @@ import {
   Wallet
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { CoinIcon } from '@/components/CoinIcon';
 
 interface WithdrawalRecord {
   id: string;
@@ -34,14 +35,15 @@ export default function WithdrawPage() {
   const [bankCoins, setBankCoins] = useState<number>(0);
   const [exchangeCoins, setExchangeCoins] = useState<string>('1000');
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [txSuccess, setTxSuccess] = useState<any>(null);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [txSuccess, setTxSuccess] = useState<any | null>(null);
+
   const [history, setHistory] = useState<WithdrawalRecord[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Calculated Tokens (1000 Coins = 100 Tokens)
-  const coinsNum = Math.max(0, parseInt(exchangeCoins, 10) || 0);
-  const estimatedTokens = Math.floor((coinsNum / 1000) * 100);
+  // Calculate estimated tokens (10 coins = 1 token)
+  const coinsNum = Number(exchangeCoins) || 0;
+  const estimatedTokens = Math.floor(coinsNum / 10);
 
   // Subscribe to user bank balance
   useEffect(() => {
@@ -69,16 +71,35 @@ export default function WithdrawPage() {
     if (!address) return;
     setIsLoadingHistory(true);
     try {
-      const q = query(
-        collection(db, 'withdrawals'),
-        where('userAddress', '==', address),
-        orderBy('createdAt', 'desc')
-      );
-      const snapshot = await getDocs(q);
+      let snapshot;
+      try {
+        const q = query(
+          collection(db, 'withdrawals'),
+          where('userAddress', '==', address),
+          orderBy('createdAt', 'desc')
+        );
+        snapshot = await getDocs(q);
+      } catch (indexErr) {
+        console.warn('Composite index fallback triggered:', indexErr);
+        const qFallback = query(
+          collection(db, 'withdrawals'),
+          where('userAddress', '==', address)
+        );
+        snapshot = await getDocs(qFallback);
+      }
+
       const records: WithdrawalRecord[] = snapshot.docs.map((doc) => ({
         id: doc.id,
         ...doc.data(),
       })) as WithdrawalRecord[];
+
+      // Sort in-memory by createdAt descending
+      records.sort((a, b) => {
+        const tA = a.createdAt?.toMillis ? a.createdAt.toMillis() : new Date(a.createdAt || 0).getTime();
+        const tB = b.createdAt?.toMillis ? b.createdAt.toMillis() : new Date(b.createdAt || 0).getTime();
+        return tB - tA;
+      });
+
       setHistory(records);
     } catch (err) {
       console.error('Failed to fetch personal withdrawal history:', err);
@@ -161,7 +182,7 @@ export default function WithdrawPage() {
               YOUR BANK BALANCE
             </span>
             <div className="flex items-center justify-center sm:justify-start gap-3">
-              <Coins className="w-8 h-8 text-yellow-400 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] animate-pulse" />
+              <CoinIcon className="w-8 h-8 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] animate-pulse" />
               <span className="text-3xl sm:text-4xl font-extrabold font-press-start text-yellow-300">
                 {bankCoins.toLocaleString()} <span className="text-sm font-mono text-amber-400">COINS</span>
               </span>
@@ -198,11 +219,11 @@ export default function WithdrawPage() {
 
               {/* Input Coins */}
               <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-4 space-y-2">
-                <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block">
-                  COINS TO WITHDRAW (MIN: 1,000)
+                <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <CoinIcon className="w-4 h-4" /> COINS TO WITHDRAW (MIN: 1,000)
                 </label>
                 <div className="flex items-center gap-2">
-                  <Coins className="w-5 h-5 text-yellow-400" />
+                  <CoinIcon className="w-6 h-6" />
                   <input
                     type="number"
                     min="1000"
@@ -217,12 +238,12 @@ export default function WithdrawPage() {
 
               {/* Estimated Token Output */}
               <div className="bg-[#171206] border border-yellow-500/30 rounded-2xl p-4 space-y-2">
-                <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider block">
-                  ESTIMATED $REAL TOKENS (10 COINS = 1 TOKEN)
+                <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                  <img src="/logo.jpeg" alt="$REAL" className="w-4 h-4 rounded-full object-cover border border-yellow-400/50" /> ESTIMATED $REAL TOKENS (10 COINS = 1 TOKEN)
                 </label>
                 <div className="flex items-center gap-2">
-                  <Sparkles className="w-5 h-5 text-amber-400" />
-                  <span className="font-mono text-xl font-extrabold text-yellow-300">
+                  <img src="/logo.jpeg" alt="$REAL" className="w-6 h-6 rounded-full object-cover border border-yellow-400/50" />
+                  <span className="font-mono text-xl font-extrabold text-yellow-300 flex items-center gap-1.5">
                     {estimatedTokens.toLocaleString()} <span className="text-xs text-amber-400">$REAL</span>
                   </span>
                 </div>

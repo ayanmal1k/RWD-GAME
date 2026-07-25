@@ -6,6 +6,7 @@ import { Wallet, LogOut, Copy, Check, Coins } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
+import { CoinIcon } from './CoinIcon';
 
 export function ConnectWalletButton() {
   const { primaryWallet, setShowAuthFlow, handleLogOut } = useDynamicContext();
@@ -80,10 +81,10 @@ export function ConnectWalletButton() {
             initial={{ scale: 1 }}
             animate={{ scale: [1, 1.18, 1] }}
             transition={{ duration: 0.3 }}
-            className="flex items-center gap-1.5 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 border border-yellow-500/40 rounded-full shadow-[0_0_12px_rgba(234,179,8,0.25)] backdrop-blur-md select-none"
+            className="flex items-center gap-2 px-3 py-1.5 bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 border border-yellow-500/40 rounded-full shadow-[0_0_12px_rgba(234,179,8,0.25)] backdrop-blur-md select-none"
             title="Total Banked Coins"
           >
-            <Coins className="w-4 h-4 text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.8)]" />
+            <CoinIcon className="w-5 h-5 drop-shadow-[0_0_6px_rgba(250,204,21,0.8)]" />
             <span className="text-xs font-extrabold text-yellow-300 font-mono tracking-wider">
               {bankCoins}
             </span>

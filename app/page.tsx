@@ -3,6 +3,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine } from '@/lib/retro-climber';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
+import { CoinIcon } from '@/components/CoinIcon';
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
@@ -586,120 +587,115 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Panels below canvas (hidden in fullscreen) */}
+      {/* Controls & Gameplay Instructions below canvas */}
       {!isFullscreen && (
         <div className="flex flex-col items-center px-4 sm:px-8 pb-8">
           <div className="w-full max-w-xl flex flex-col items-center gap-4 z-10">
-            {/* Controls */}
-            <section className="w-full bg-[#061208]/90 backdrop-blur-md rounded-xl p-3 shadow-md border border-[#103a15] flex flex-col gap-2.5 font-mono text-[#a0c0a0] text-xs">
-              <h3 className="text-[10px] font-bold font-press-start text-[#81c784] uppercase tracking-wider text-center border-b border-[#103a15] pb-2">
-                Controls
-              </h3>
-              <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center justify-between bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 col-span-2">
-                  <span className="text-[10px]">Move</span>
-                  <div className="flex gap-0.5">
-                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">A</kbd>
-                    <span className="text-[7px] text-[#406050] self-center">/</span>
-                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">D</kbd>
-                    <span className="text-[7px] text-[#406050] self-center mx-0.5">or</span>
-                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">◀</kbd>
-                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">▶</kbd>
+            
+            {/* Game Controls Card */}
+            <section className="w-full bg-[#171206]/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-yellow-500/30 flex flex-col gap-3 font-mono text-yellow-200/80 text-xs">
+              <div className="flex items-center justify-between border-b border-yellow-500/20 pb-2.5">
+                <h3 className="text-[10px] font-bold font-press-start text-yellow-300 uppercase tracking-wider flex items-center gap-2">
+                  <CoinIcon className="w-4 h-4" /> GAME CONTROLS & INSTRUCTIONS
+                </h3>
+                <span className="text-[9px] font-mono text-amber-400 font-bold bg-yellow-500/10 px-2 py-0.5 rounded border border-yellow-500/20">Arcade Mode</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                <div className="flex items-center justify-between bg-[#0a0802] p-2.5 rounded-xl border border-yellow-500/15 sm:col-span-2">
+                  <span className="text-[11px] font-bold text-amber-300">Move Left / Right</span>
+                  <div className="flex gap-1">
+                    <kbd className="px-2 py-1 bg-[#261e0b] border border-yellow-500/40 rounded-lg text-yellow-300 font-mono font-bold text-[10px]">A</kbd>
+                    <kbd className="px-2 py-1 bg-[#261e0b] border border-yellow-500/40 rounded-lg text-yellow-300 font-mono font-bold text-[10px]">D</kbd>
+                    <span className="text-[9px] text-amber-400/60 self-center mx-1">or</span>
+                    <kbd className="px-2 py-1 bg-[#261e0b] border border-yellow-500/40 rounded-lg text-yellow-300 font-mono font-bold text-[10px]">◀</kbd>
+                    <kbd className="px-2 py-1 bg-[#261e0b] border border-yellow-500/40 rounded-lg text-yellow-300 font-mono font-bold text-[10px]">▶</kbd>
                   </div>
                 </div>
-                <div className="flex items-center justify-between bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50">
-                  <span className="text-[10px]">Jump</span>
-                  <div className="flex gap-0.5">
-                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">W</kbd>
-                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">▲</kbd>
-                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[7px]">SPACE</kbd>
+
+                <div className="flex items-center justify-between bg-[#0a0802] p-2.5 rounded-xl border border-yellow-500/15">
+                  <span className="text-[11px] font-bold text-amber-300">Jump</span>
+                  <div className="flex gap-1">
+                    <kbd className="px-2 py-1 bg-[#261e0b] border border-yellow-500/40 rounded-lg text-yellow-300 font-mono font-bold text-[10px]">W</kbd>
+                    <kbd className="px-2 py-1 bg-[#261e0b] border border-yellow-500/40 rounded-lg text-yellow-300 font-mono font-bold text-[10px]">▲</kbd>
+                    <kbd className="px-2 py-1 bg-[#261e0b] border border-yellow-500/40 rounded-lg text-yellow-300 font-mono font-bold text-[8px]">SPACE</kbd>
                   </div>
                 </div>
-                <div className="flex items-center justify-between bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50">
-                  <span className="text-[10px]">Power Jump <span className="text-[#ffd700]">(costs 20 coins)</span></span>
-                  <div className="flex gap-0.5">
-                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#81c784] font-sans font-bold text-[9px]">SHIFT</kbd>
-                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#81c784] font-sans font-bold text-[9px]">▲</kbd>
+
+                <div className="flex items-center justify-between bg-[#0a0802] p-2.5 rounded-xl border border-yellow-500/15">
+                  <div className="flex items-center gap-1">
+                    <span className="text-[11px] font-bold text-amber-300">Super Jump</span>
+                    <span className="text-[9px] text-yellow-400 font-bold">(20 Coins)</span>
+                  </div>
+                  <div className="flex gap-1">
+                    <kbd className="px-2 py-1 bg-[#261e0b] border border-yellow-500/40 rounded-lg text-yellow-300 font-mono font-bold text-[8px]">SHIFT</kbd>
+                    <span className="text-[9px] text-amber-400/60 self-center">+</span>
+                    <kbd className="px-2 py-1 bg-[#261e0b] border border-yellow-500/40 rounded-lg text-yellow-300 font-mono font-bold text-[8px]">SPACE</kbd>
                   </div>
                 </div>
-                <div className="flex items-center justify-between bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 col-span-2">
-                  <span className="text-[10px]">Start / Retry</span>
-                  <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">ANY KEY</kbd>
+              </div>
+
+              {/* Power-up Tips & Mechanics */}
+              <div className="mt-1 pt-2.5 border-t border-yellow-500/15 grid grid-cols-2 gap-2 text-[10px]">
+                <div className="flex items-center gap-2 bg-[#0a0802]/60 p-2 rounded-lg border border-yellow-500/10">
+                  <CoinIcon className="w-4 h-4" />
+                  <span>Collect coins to build your Treasury Bank!</span>
+                </div>
+                <div className="flex items-center gap-2 bg-[#0a0802]/60 p-2 rounded-lg border border-yellow-500/10">
+                  <span className="text-yellow-400 font-bold text-xs">🚀 Springs</span>
+                  <span>Bounce high on green spring platforms!</span>
                 </div>
               </div>
             </section>
 
             {/* Mechanics & Platforms Guide */}
-            <section className="w-full bg-[#061208]/90 backdrop-blur-md rounded-xl p-3 shadow-md border border-[#103a15] flex flex-col gap-2.5 font-mono text-[#a0c0a0] text-xs">
-              <h3 className="text-[10px] font-bold font-press-start text-[#81c784] uppercase tracking-wider text-center border-b border-[#103a15] pb-2">
-                Platforms & Collectibles
+            <section className="w-full bg-[#171206]/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-yellow-500/30 flex flex-col gap-3 font-mono text-yellow-200/80 text-xs">
+              <h3 className="text-[10px] font-bold font-press-start text-yellow-300 uppercase tracking-wider text-center border-b border-yellow-500/20 pb-2">
+                PLATFORMS & COLLECTIBLES
               </h3>
-              <div className="flex flex-row flex-wrap gap-2">
-                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 flex-1 min-w-[160px]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0" style={{ imageRendering: 'pixelated' }}>
-                    <rect x="0" y="12" width="24" height="12" fill="#5d4037" />
-                    <rect x="0" y="8" width="24" height="6" fill="#81c784" />
-                    <rect x="2" y="4" width="6" height="8" fill="#4caf50" />
-                    <rect x="14" y="6" width="8" height="6" fill="#4caf50" />
-                  </svg>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
+                <div className="flex items-center gap-2.5 bg-[#0a0802] p-2.5 rounded-xl border border-yellow-500/15">
+                  <span className="text-yellow-400 font-bold text-sm">🏞️</span>
                   <div className="min-w-0">
-                    <span className="text-[#81c784] font-bold text-[9px]">Standard</span>
-                    <p className="text-[7px] text-[#608070] leading-tight">Rocky ledges with flowers. Safe to jump on.</p>
+                    <span className="text-yellow-300 font-bold text-[10px] block">Standard Ledge</span>
+                    <p className="text-[9px] text-amber-200/60 leading-tight">Rocky mountain platform. Safe to land on.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 flex-1 min-w-[160px]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0" style={{ imageRendering: 'pixelated' }}>
-                    <rect x="0" y="8" width="24" height="12" rx="4" fill="#5D4037" />
-                    <rect x="0" y="20" width="24" height="2" fill="#3E2723" />
-                    <rect x="2" y="10" width="20" height="2" fill="#4E342E" />
-                    <rect x="4" y="14" width="16" height="2" fill="#4E342E" />
-                    <rect x="1" y="8" width="3" height="12" fill="#795548" />
-                    <rect x="20" y="8" width="3" height="12" fill="#795548" />
-                  </svg>
+
+                <div className="flex items-center gap-2.5 bg-[#0a0802] p-2.5 rounded-xl border border-yellow-500/15">
+                  <span className="text-amber-400 font-bold text-sm">🪵</span>
                   <div className="min-w-0">
-                    <span className="text-[#8D6E63] font-bold text-[9px]">Log</span>
-                    <p className="text-[7px] text-[#608070] leading-tight">Floating fallen tree log. Moves side to side.</p>
+                    <span className="text-amber-400 font-bold text-[10px] block">Moving Log</span>
+                    <p className="text-[9px] text-amber-200/60 leading-tight">Floating fallen tree log. Slides side to side.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 flex-1 min-w-[160px]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0" style={{ imageRendering: 'pixelated' }}>
-                    <rect x="0" y="8" width="24" height="12" fill="#757575" />
-                    <rect x="0" y="20" width="24" height="2" fill="#424242" />
-                    <rect x="6" y="8" width="2" height="4" fill="#212121" />
-                    <rect x="6" y="12" width="5" height="2" fill="#212121" />
-                    <rect x="11" y="12" width="2" height="4" fill="#212121" />
-                    <rect x="17" y="8" width="2" height="4" fill="#212121" />
-                    <rect x="15" y="12" width="4" height="2" fill="#212121" />
-                    <rect x="4" y="22" width="2" height="2" fill="#616161" />
-                    <rect x="18" y="21" width="2" height="2" fill="#616161" />
-                  </svg>
+
+                <div className="flex items-center gap-2.5 bg-[#0a0802] p-2.5 rounded-xl border border-yellow-500/15">
+                  <span className="text-red-400 font-bold text-sm">⚠️</span>
                   <div className="min-w-0">
-                    <span className="text-[#9E9E9E] font-bold text-[9px]">Loose Rock</span>
-                    <p className="text-[7px] text-[#608070] leading-tight">Broken cliff edge. Crumbles when landed on!</p>
+                    <span className="text-red-400 font-bold text-[10px] block">Loose Rock</span>
+                    <p className="text-[9px] text-amber-200/60 leading-tight">Crumbling cliff edge. Breaks when landed on!</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 flex-1 min-w-[160px]">
-                  <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0" style={{ imageRendering: 'pixelated' }}>
-                    <rect x="2" y="12" width="20" height="10" rx="3" fill="#64DD17" />
-                    <rect x="2" y="22" width="20" height="2" fill="#33691E" />
-                    <rect x="0" y="14" width="24" height="6" rx="2" fill="#76FF03" />
-                    <rect x="4" y="16" width="3" height="2" fill="#B2FF59" />
-                    <rect x="12" y="15" width="4" height="2" fill="#B2FF59" />
-                  </svg>
+
+                <div className="flex items-center gap-2.5 bg-[#0a0802] p-2.5 rounded-xl border border-yellow-500/15">
+                  <span className="text-yellow-400 font-bold text-sm">🚀</span>
                   <div className="min-w-0">
-                    <span className="text-[#76FF03] font-bold text-[9px]">Moss</span>
-                    <p className="text-[7px] text-[#608070] leading-tight">Thick bright moss trampoline. Bounces you high!</p>
+                    <span className="text-yellow-300 font-bold text-[10px] block">Spring Pad</span>
+                    <p className="text-[9px] text-amber-200/60 leading-tight">Super trampoline moss. Launches you skyward!</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#81c784]/20 flex-1 min-w-[160px]">
-                  <div className="w-5 h-5 shrink-0 rounded-full" style={{ backgroundImage: 'url(/coin.png)', backgroundSize: '600% 100%', backgroundPosition: '0% 0%', imageRendering: 'pixelated' }} />
+
+                <div className="flex items-center gap-2.5 bg-[#0a0802] p-2.5 rounded-xl border border-yellow-500/15 sm:col-span-2">
+                  <CoinIcon className="w-5 h-5" />
                   <div className="min-w-0">
-                    <span className="text-[#ffd700] font-bold text-[9px]">Gold Coin</span>
-                    <p className="text-[7px] text-[#608070] leading-tight">+50 pts. Spend 20 for Mega Jump!</p>
+                    <span className="text-yellow-300 font-bold text-[10px] block">Spinning Gold Coin</span>
+                    <p className="text-[9px] text-amber-200/60 leading-tight">+50 score points & deposits 1 coin into your Treasury Bank for token payouts!</p>
                   </div>
                 </div>
               </div>
             </section>
+
           </div>
         </div>
       )}

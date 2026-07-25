@@ -153,3 +153,32 @@
 .animate-retro-blink {
   animation: blink 1.2s step-start infinite;
 }
+
+@keyframes breathe {
+  0%, 100% {
+    transform: scaleY(1);
+  }
+  50% {
+    transform: scaleY(0.95) scaleX(1.02);
+  }
+}
+
+.animate-breathe {
+  animation: breathe 2s ease-in-out infinite;
+  transform-origin: bottom center;
+}
+
+@keyframes shadow-breathe {
+  0%, 100% {
+    transform: translateX(-50%) scaleX(1);
+    opacity: 0.4;
+  }
+  50% {
+    transform: translateX(-50%) scaleX(1.1);
+    opacity: 0.6;
+  }
+}
+
+.animate-shadow-breathe {
+  animation: shadow-breathe 2s ease-in-out infinite;
+}

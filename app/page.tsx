@@ -2,6 +2,8 @@
 
 import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine } from '@/lib/retro-climber';
+import { ConnectWalletButton } from '@/components/ConnectWalletButton';
+import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import {
   Pause,
   Volume2,
@@ -14,6 +16,8 @@ import {
 export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
+
+  const { primaryWallet, setShowAuthFlow } = useDynamicContext();
 
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'PAUSED' | 'GAME_OVER'>('START');
   const [score, setScore] = useState(0);
@@ -78,6 +82,25 @@ export default function Home() {
     }
   }, [isMuted]);
 
+  const handlePlayClick = () => {
+    if (isMobile && !isFullscreen) {
+      setIsFullscreen(true);
+    }
+    if (!primaryWallet) {
+      setShowAuthFlow(true);
+    } else {
+      handleStartRestart();
+    }
+  };
+
+  useEffect(() => {
+    if (!primaryWallet && gameState !== 'START') {
+      if (engineRef.current) {
+        engineRef.current.forceStop();
+      }
+    }
+  }, [primaryWallet, gameState]);
+
   const handleStartRestart = () => {
     if (engineRef.current) {
       engineRef.current.startGame();
@@ -117,6 +140,7 @@ export default function Home() {
 
   return (
     <main className={`${isFullscreen ? 'overflow-hidden' : 'min-h-screen'} w-full bg-gradient-to-b from-[#051a0a] via-[#0a2d14] to-[#051a0a] text-[#d4e8d5] antialiased font-sans`}>
+      <ConnectWalletButton />
       <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(30,120,40,0.3),transparent_60%)] pointer-events-none" />
 
       {/* Normal page header & highscore (hidden in fullscreen) */}
@@ -154,21 +178,29 @@ export default function Home() {
 
             {/* START OVERLAY */}
             {gameState === 'START' && (
-              <div className="absolute inset-0 bg-[#020a05]/85 flex flex-col items-center justify-center p-6 text-center text-white">
-                {isMobile && !isFullscreen ? (
-                  <>
-                    <h2 className="text-lg font-extrabold font-press-start text-[#81c784] mb-2">TAP TO PLAY</h2>
-                    <p className="text-[9px] font-mono text-[#70a080] mb-5 max-w-xs leading-relaxed">Enter fullscreen to start climbing!</p>
-                    <button onClick={toggleFullscreen} className="px-5 py-2.5 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#4caf50]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">ENTER FULLSCREEN</button>
-                  </>
-                ) : (
-                  <>
-                    <h2 className="text-lg font-extrabold font-press-start text-[#81c784] mb-2">READY TO CLIMB?</h2>
-                    <p className="text-[9px] font-mono text-[#70a080] mb-5 uppercase max-w-xs leading-relaxed">Use A/D or arrows to move. Collect coins and climb higher!</p>
-                    <p className="text-[7px] font-mono text-[#407050] mb-3">Press any key to start</p>
-                    <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#4caf50]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">PLAY NOW</button>
-                  </>
-                )}
+              <div className="absolute inset-0 bg-[#051a0a] flex flex-col items-center justify-center p-6 text-center text-white z-40">
+                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-b from-[#81c784] to-[#4caf50] drop-shadow-[0_4px_8px_rgba(0,0,0,0.8)] mb-8">
+                   $REAL CLIMBER
+                 </h1>
+
+                 <div className="relative w-32 h-32 sm:w-40 sm:h-40 mb-12">
+                   <img 
+                     src="/idle.png" 
+                     alt="Character Idle" 
+                     className="w-full h-full object-contain pixelated animate-breathe"
+                   />
+                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-3 bg-black/40 rounded-[50%] blur-sm animate-shadow-breathe"></div>
+                 </div>
+
+                 <button 
+                   onClick={handlePlayClick}
+                   className="px-8 py-4 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-sm sm:text-base rounded-2xl border-4 border-[#81c784] shadow-[0_0_20px_rgba(76,175,80,0.5)] hover:shadow-[0_0_30px_rgba(76,175,80,0.8)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                 >
+                   {primaryWallet ? "PLAY NOW" : "CONNECT TO PLAY"}
+                 </button>
+                 {isMobile && !isFullscreen && (
+                   <p className="mt-4 text-[9px] font-mono text-[#70a080]">Game will launch in fullscreen mode.</p>
+                 )}
               </div>
             )}
 

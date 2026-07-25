@@ -529,9 +529,8 @@ export class GameEngine {
         e.preventDefault(); // Stop page scrolling
       }
 
-      // Start game on any key press
+      // Start game only through UI button now
       if (this.state === 'START') {
-        this.startGame();
         return;
       }
 
@@ -600,6 +599,15 @@ export class GameEngine {
       this.accumulator = 0;
       this.animId = requestAnimationFrame(this.gameLoop);
     }
+  }
+
+  public forceStop() {
+    this.state = 'START';
+    this.callbacks.onStateChange(this.state);
+    this.audio.stopMusic();
+    if (this.animId) cancelAnimationFrame(this.animId);
+    this.resetGame();
+    this.drawStartScreen();
   }
 
   public triggerGameOver() {

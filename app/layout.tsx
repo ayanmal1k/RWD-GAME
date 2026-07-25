@@ -24,6 +24,8 @@ export const metadata: Metadata = {
   },
 }
 
+import { DynamicProvider } from '@/components/DynamicProvider';
+
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -32,8 +34,10 @@ export default function RootLayout({
   return (
     <html lang="en" className={`${pressStart.variable} ${outfit.variable}`}>
       <body className="font-sans antialiased">
-        {children}
-        <Analytics />
+        <DynamicProvider>
+          {children}
+          <Analytics />
+        </DynamicProvider>
       </body>
     </html>
   )

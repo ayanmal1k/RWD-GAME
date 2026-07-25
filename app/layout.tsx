@@ -16,6 +16,7 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
+  metadataBase: new URL('https://realibexcoin.netlify.app'),
   title: '$REAL IBEX — THIS IS NOT JUST A COIN. THIS IS $REAL.',
   description: 'Join the $REAL Ibex Republic. Built for growth, designed to last. Real vision, real community, real future. Play $REAL Mountain Climber, collect coins, and exchange for $REAL Solana tokens.',
   keywords: ['$REAL', 'Real Ibex', 'Real Coin', 'Crypto', 'Memecoin', 'Solana', 'Web3', 'Real Ecosystem', 'Ibex Republic', 'Mountain Climber', 'Real Token'],

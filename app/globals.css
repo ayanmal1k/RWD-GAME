@@ -1,0 +1,155 @@
+@import 'tailwindcss';
+@import 'tw-animate-css';
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  --background: oklch(0.08 0.02 240);
+  --foreground: oklch(0.985 0 0);
+  --card: oklch(0.12 0.03 240);
+  --card-foreground: oklch(0.985 0 0);
+  --popover: oklch(0.12 0.03 240);
+  --popover-foreground: oklch(0.985 0 0);
+  --primary: oklch(0.7 0.2 330);
+  --primary-foreground: oklch(0.985 0 0);
+  --secondary: oklch(0.2 0.05 240);
+  --secondary-foreground: oklch(0.985 0 0);
+  --muted: oklch(0.2 0.05 240);
+  --muted-foreground: oklch(0.7 0.02 240);
+  --accent: oklch(0.75 0.18 140);
+  --accent-foreground: oklch(0.1 0.02 240);
+  --destructive: oklch(0.577 0.245 27.325);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.25 0.05 240);
+  --input: oklch(0.25 0.05 240);
+  --ring: oklch(0.7 0.2 330);
+  --radius: 0.75rem;
+}
+
+@theme inline {
+  --font-sans: var(--font-outfit), 'Geist', sans-serif;
+  --font-mono: 'Geist Mono', 'Geist Mono Fallback';
+  --font-press-start: var(--font-press-start), monospace;
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  body {
+    @apply bg-background text-foreground overflow-x-hidden selection:bg-primary selection:text-primary-foreground;
+  }
+}
+
+/* Retro and Pixelated Custom Styles */
+.pixelated {
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+  -moz-image-rendering: crisp-edges;
+  -webkit-image-rendering: pixelated;
+}
+
+.crt-effect {
+  position: relative;
+}
+
+.crt-effect::after {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  right: 0;
+  background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.05), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.05));
+  background-size: 100% 4px, 6px 100%;
+  pointer-events: none;
+  z-index: 10;
+  opacity: 0.4;
+  border-radius: inherit;
+}
+
+.pixel-shadow {
+  box-shadow: 0px 4px 0px 0px rgba(0, 0, 0, 0.5);
+}
+
+.retro-panel {
+  border: 4px solid oklch(0.25 0.05 240);
+  background: oklch(0.12 0.03 240);
+  box-shadow: 0 8px 0 0 oklch(0.05 0.01 240);
+}
+
+.retro-btn {
+  position: relative;
+  border: 3px solid #000;
+  border-radius: 4px;
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  box-shadow: 0 4px 0 0 oklch(0.4 0.15 330);
+  transition: all 0.1s ease;
+}
+
+.retro-btn:active {
+  transform: translateY(4px);
+  box-shadow: 0 0px 0 0 oklch(0.4 0.15 330);
+}
+
+@keyframes scanline {
+  0% {
+    transform: translateY(-100%);
+  }
+
+  100% {
+    transform: translateY(100%);
+  }
+}
+
+.scanline-light::before {
+  content: " ";
+  display: block;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 100px;
+  background: linear-gradient(to bottom, rgba(255, 255, 255, 0), rgba(255, 255, 255, 0.08) 50%, rgba(255, 255, 255, 0) 100%);
+  animation: scanline 6s linear infinite;
+  pointer-events: none;
+  z-index: 11;
+}
+
+@keyframes blink {
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0;
+  }
+}
+
+.animate-retro-blink {
+  animation: blink 1.2s step-start infinite;
+}

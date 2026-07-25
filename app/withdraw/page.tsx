@@ -113,8 +113,8 @@ export default function WithdrawPage() {
       return;
     }
 
-    if (coinsNum <= 0) {
-      setErrorMsg('Please enter a valid amount of coins to withdraw.');
+    if (coinsNum < 1000) {
+      setErrorMsg('Minimum withdrawal threshold is 1,000 coins.');
       return;
     }
 
@@ -165,19 +165,31 @@ export default function WithdrawPage() {
             Convert your hard-earned climbing coins into $REAL tokens. Paid directly from our Solana treasury wallet.
           </p>
 
-          {/* $REAL Token Address Display */}
-          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#171206] border border-yellow-500/30 rounded-xl text-xs font-mono text-amber-300">
-            <span className="text-[10px] text-amber-400 font-bold uppercase">$REAL MINT:</span>
-            <span className="font-bold text-yellow-300 select-all font-mono">BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv</span>
-            <a 
-              href="https://solscan.io/token/BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv" 
-              target="_blank" 
-              rel="noopener noreferrer" 
-              className="text-amber-400 hover:text-yellow-200 ml-1 inline-flex items-center"
-              title="View on Solscan"
-            >
-              <ExternalLink className="w-3.5 h-3.5" />
-            </a>
+          {/* $REAL Token Address & Minimum Limit Badges */}
+          <div className="flex flex-wrap items-center justify-center gap-3">
+            {process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS && (
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#171206] border border-yellow-500/30 rounded-xl text-xs font-mono text-amber-300">
+                <span className="text-[10px] text-amber-400 font-bold uppercase">$REAL MINT:</span>
+                <span className="font-bold text-yellow-300 select-all font-mono">
+                  {process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS}
+                </span>
+                <a 
+                  href={`https://solscan.io/token/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS}`} 
+                  target="_blank" 
+                  rel="noopener noreferrer" 
+                  className="text-amber-400 hover:text-yellow-200 ml-1 inline-flex items-center"
+                  title="View on Solscan"
+                >
+                  <ExternalLink className="w-3.5 h-3.5" />
+                </a>
+              </div>
+            )}
+
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#171206] border border-yellow-500/30 rounded-xl text-xs font-mono text-amber-300">
+              <ShieldCheck className="w-3.5 h-3.5 text-yellow-400" />
+              <span className="text-[10px] text-amber-400 font-bold uppercase">MIN WITHDRAWAL:</span>
+              <span className="font-bold text-yellow-300 font-mono">1,000 COINS (= 100 $REAL)</span>
+            </div>
           </div>
         </div>
 
@@ -215,10 +227,16 @@ export default function WithdrawPage() {
         </div>
 
         {/* Exchange Form Section */}
-        <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative">
-          <h2 className="text-sm font-bold font-press-start text-amber-300 mb-6 flex items-center gap-2">
-            <ArrowRightLeft className="w-4 h-4 text-yellow-400" /> CONVERT COINS TO $REAL TOKENS
-          </h2>
+        <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-yellow-500/15">
+            <h2 className="text-sm font-bold font-press-start text-amber-300 flex items-center gap-2">
+              <ArrowRightLeft className="w-4 h-4 text-yellow-400" /> CONVERT COINS TO $REAL TOKENS
+            </h2>
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-[11px] font-mono text-yellow-300">
+              <span>MIN LIMIT:</span>
+              <span className="font-bold text-amber-400">1,000 COINS</span>
+            </div>
+          </div>
 
           <form onSubmit={handleWithdraw} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -226,18 +244,18 @@ export default function WithdrawPage() {
               {/* Input Coins */}
               <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-4 space-y-2">
                 <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <CoinIcon className="w-4 h-4" /> COINS TO WITHDRAW
+                  <CoinIcon className="w-4 h-4" /> COINS TO WITHDRAW (MIN: 1,000)
                 </label>
                 <div className="flex items-center gap-2">
                   <CoinIcon className="w-6 h-6" />
                   <input
                     type="number"
-                    min="1"
-                    step="1"
+                    min="1000"
+                    step="100"
                     value={exchangeCoins}
                     onChange={(e) => setExchangeCoins(e.target.value)}
                     className="w-full bg-transparent font-mono text-xl font-bold text-yellow-200 focus:outline-none placeholder-yellow-500/30"
-                    placeholder="Enter coins"
+                    placeholder="1000"
                   />
                 </div>
               </div>
@@ -308,7 +326,7 @@ export default function WithdrawPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting || coinsNum <= 0 || coinsNum > bankCoins}
+              disabled={isSubmitting || coinsNum < 1000 || coinsNum > bankCoins}
               className="w-full py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs sm:text-sm rounded-2xl shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.01] active:scale-[0.99]"
             >
               {isSubmitting ? 'PROCESSING TREASURY TRANSACTION...' : !address ? 'CONNECT WALLET TO WITHDRAW' : 'EXCHANGE & WITHDRAW NOW'}

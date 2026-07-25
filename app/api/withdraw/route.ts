@@ -4,7 +4,14 @@ import { doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp, in
 import { Connection, Keypair, PublicKey, SystemProgram, Transaction, sendAndConfirmTransaction } from '@solana/web3.js';
 import bs58 from 'bs58';
 
-import { getOrCreateAssociatedTokenAccount, transfer as transferSPL } from '@solana/spl-token';
+import {
+  getAssociatedTokenAddress,
+  createAssociatedTokenAccountInstruction,
+  createTransferInstruction,
+  getMint,
+  TOKEN_PROGRAM_ID,
+  TOKEN_2022_PROGRAM_ID
+} from '@solana/spl-token';
 
 const TOKEN_MINT_ADDRESS = process.env.REAL_TOKEN_MINT_ADDRESS || process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS || 'BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv';
 
@@ -19,8 +26,8 @@ export async function POST(request: Request) {
 
     const coinsToExchange = Number(amountCoins);
 
-    if (isNaN(coinsToExchange) || coinsToExchange <= 0) {
-      return NextResponse.json({ error: 'Please enter a valid amount of coins to withdraw' }, { status: 400 });
+    if (isNaN(coinsToExchange) || coinsToExchange < 1000) {
+      return NextResponse.json({ error: 'Minimum withdrawal threshold is 1,000 coins' }, { status: 400 });
     }
 
     // Fetch user record from Firestore
@@ -72,68 +79,81 @@ export async function POST(request: Request) {
         const recipientPubKey = new PublicKey(userAddress);
         const mintPubKey = new PublicKey(TOKEN_MINT_ADDRESS);
 
+        // Detect token program & decimals
+        let tokenProgramId = TOKEN_PROGRAM_ID;
+        let decimals = 6;
+
         try {
-          // Attempt SPL token transfer
-          const fromTokenAccount = await getOrCreateAssociatedTokenAccount(
-            connection,
-            treasuryKeypair,
-            mintPubKey,
-            treasuryKeypair.publicKey
-          );
-
-          const toTokenAccount = await getOrCreateAssociatedTokenAccount(
-            connection,
-            treasuryKeypair,
-            mintPubKey,
-            recipientPubKey,
-            false,
-            'confirmed'
-          );
-
-          // Assuming standard 6 decimals or raw amount calculation
-          const amountInRaw = Math.round(tokensPaid * (10 ** 6));
-
-          txSignature = await transferSPL(
-            connection,
-            treasuryKeypair,
-            fromTokenAccount.address,
-            toTokenAccount.address,
-            treasuryKeypair,
-            amountInRaw
-          );
-          isSimulated = false;
-          payoutAsset = '$REAL';
-          payoutAmount = tokensPaid;
-          console.log(`[SOLANA TREASURY SPL PAYOUT SUCCESS] Tx: ${txSignature}`);
-        } catch (tokenErr: any) {
-          console.warn('SPL token transfer failed, attempting native SOL fallback payout:', tokenErr?.message || tokenErr);
-          
-          // Rent-exemption minimum on Solana (approx 890,880 lamports ~ 0.00089 SOL)
-          const rentExemptMin = await connection.getMinimumBalanceForRentExemption(0);
-          const recipientAccount = await connection.getAccountInfo(recipientPubKey);
-          const recipientBalance = recipientAccount ? recipientAccount.lamports : 0;
-
-          let lamportsToTransfer = Math.round(tokensPaid * 100000); // Base 0.0001 SOL per token
-          if (recipientBalance + lamportsToTransfer < rentExemptMin) {
-            lamportsToTransfer = Math.max(lamportsToTransfer, rentExemptMin - recipientBalance + 5000);
+          const mintInfo = await getMint(connection, mintPubKey, 'confirmed', TOKEN_PROGRAM_ID);
+          decimals = mintInfo.decimals;
+        } catch (e1) {
+          try {
+            const mintInfo2022 = await getMint(connection, mintPubKey, 'confirmed', TOKEN_2022_PROGRAM_ID);
+            decimals = mintInfo2022.decimals;
+            tokenProgramId = TOKEN_2022_PROGRAM_ID;
+          } catch (e2) {
+            console.warn('Using default SPL token program ID and 6 decimals.');
           }
-
-          const transaction = new Transaction().add(
-            SystemProgram.transfer({
-              fromPubkey: treasuryKeypair.publicKey,
-              toPubkey: recipientPubKey,
-              lamports: lamportsToTransfer,
-            })
-          );
-
-          txSignature = await sendAndConfirmTransaction(connection, transaction, [treasuryKeypair]);
-          isSimulated = false;
-          payoutAsset = 'SOL';
-          payoutAmount = Number((lamportsToTransfer / 1e9).toFixed(6));
-          console.log(`[SOLANA TREASURY SOL PAYOUT SUCCESS] Tx: ${txSignature}, Amount: ${payoutAmount} SOL`);
         }
+
+        // Get Associated Token Accounts
+        const fromAta = await getAssociatedTokenAddress(mintPubKey, treasuryKeypair.publicKey, false, tokenProgramId);
+        const toAta = await getAssociatedTokenAddress(mintPubKey, recipientPubKey, false, tokenProgramId);
+
+        const treasuryBalance = await connection.getBalance(treasuryKeypair.publicKey);
+        const toAtaInfo = await connection.getAccountInfo(toAta);
+
+        const ataRentFee = 2039280; // Required SOL rent exemption for new SPL Token Account (~0.00204 SOL)
+        if (!toAtaInfo && treasuryBalance < ataRentFee + 50000) {
+          const currentSol = (treasuryBalance / 1e9).toFixed(4);
+          const neededSol = ((ataRentFee + 50000) / 1e9).toFixed(4);
+          return NextResponse.json(
+            {
+              error: `Treasury Wallet low SOL balance! Treasury has ${currentSol} SOL, but needs at least ${neededSol} SOL to create the recipient's $REAL Token Account. Please top up your Treasury Wallet with SOL!`
+            },
+            { status: 500 }
+          );
+        }
+
+        const transaction = new Transaction();
+
+        // Check if recipient ATA exists, if not add instruction to create it
+        if (!toAtaInfo) {
+          transaction.add(
+            createAssociatedTokenAccountInstruction(
+              treasuryKeypair.publicKey, // Payer
+              toAta, // Associated Token Account Address
+              recipientPubKey, // Account Owner
+              mintPubKey, // Token Mint
+              tokenProgramId
+            )
+          );
+        }
+
+        // Add SPL Token Transfer Instruction
+        const rawAmount = BigInt(Math.round(tokensPaid * (10 ** decimals)));
+        transaction.add(
+          createTransferInstruction(
+            fromAta,
+            toAta,
+            treasuryKeypair.publicKey,
+            rawAmount,
+            [],
+            tokenProgramId
+          )
+        );
+
+        txSignature = await sendAndConfirmTransaction(connection, transaction, [treasuryKeypair]);
+        isSimulated = false;
+        payoutAsset = '$REAL';
+        payoutAmount = tokensPaid;
+        console.log(`[SOLANA TREASURY $REAL PAYOUT SUCCESS] Tx: ${txSignature}`);
       } catch (err: any) {
-        console.warn('Real Solana payout transaction failed, falling back to simulated verification tx:', err?.message || err);
+        console.error('Real Solana $REAL token transfer failed:', err?.message || err);
+        return NextResponse.json(
+          { error: `Treasury $REAL token payout error: ${err?.message || 'Transaction failed. Check treasury SOL and $REAL token balances.'}` },
+          { status: 500 }
+        );
       }
     }
 

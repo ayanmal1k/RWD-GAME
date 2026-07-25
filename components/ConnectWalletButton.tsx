@@ -1,15 +1,15 @@
 'use client';
 
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
-import { motion } from 'framer-motion';
-import { Wallet, LogOut, Copy, Check, Coins } from 'lucide-react';
+import { useAppWallet } from './DynamicProvider';
+import { motion, AnimatePresence } from 'framer-motion';
+import { Wallet, LogOut, Copy, Check, Coins, AlertTriangle } from 'lucide-react';
 import React, { useState, useEffect } from 'react';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot } from 'firebase/firestore';
 import { CoinIcon } from './CoinIcon';
 
 export function ConnectWalletButton() {
-  const { primaryWallet, setShowAuthFlow, handleLogOut } = useDynamicContext();
+  const { primaryWallet, setShowAuthFlow, handleLogOut, connectNativeSolana, walletError } = useAppWallet();
   const [copied, setCopied] = useState(false);
   const [bankCoins, setBankCoins] = useState<number>(0);
 

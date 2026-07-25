@@ -4,7 +4,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { GameEngine } from '@/lib/retro-climber';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { CoinIcon } from '@/components/CoinIcon';
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { useAppWallet } from '@/components/DynamicProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
 import {
@@ -33,7 +33,7 @@ export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
 
-  const { primaryWallet, setShowAuthFlow } = useDynamicContext();
+  const { primaryWallet, setShowAuthFlow } = useAppWallet();
 
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'PAUSED' | 'GAME_OVER'>('START');
   const [score, setScore] = useState(0);

@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
+import { useAppWallet } from '@/components/DynamicProvider';
 import { db } from '@/lib/firebase';
 import { doc, onSnapshot, collection, query, where, orderBy, getDocs } from 'firebase/firestore';
 import {
@@ -31,7 +31,7 @@ interface WithdrawalRecord {
 }
 
 export default function WithdrawPage() {
-  const { primaryWallet, setShowAuthFlow } = useDynamicContext();
+  const { primaryWallet, setShowAuthFlow } = useAppWallet();
   const address = primaryWallet?.address;
 
   const [bankCoins, setBankCoins] = useState<number>(0);

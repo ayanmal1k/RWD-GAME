@@ -1,7 +1,8 @@
 import type { Metadata } from 'next'
 import { Press_Start_2P, Outfit } from 'next/font/google'
-import { Analytics } from '@vercel/analytics/next'
 import './globals.css'
+import { DynamicProvider } from '@/components/DynamicProvider'
+import { Navbar } from '@/components/Navbar'
 
 const pressStart = Press_Start_2P({
   weight: '400',
@@ -57,9 +58,6 @@ export const metadata: Metadata = {
   },
 };
 
-import { DynamicProvider } from '@/components/DynamicProvider';
-import { Navbar } from '@/components/Navbar';
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -71,7 +69,6 @@ export default function RootLayout({
         <DynamicProvider>
           <Navbar />
           {children}
-          <Analytics />
         </DynamicProvider>
       </body>
     </html>

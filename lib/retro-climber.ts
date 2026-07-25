@@ -1472,16 +1472,16 @@ export class GameEngine {
     this.drawEndlessBackground();
 
     this.ctx.save();
-    this.ctx.fillStyle = 'rgba(8, 10, 26, 0.7)';
+    this.ctx.fillStyle = 'rgba(5, 26, 10, 0.7)';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Title Logo
-    this.ctx.font = '32px "Press Start 2P", monospace';
-    this.ctx.fillStyle = '#f43f5e';
+    this.ctx.font = '18px "Press Start 2P", monospace';
+    this.ctx.fillStyle = '#2e7d32';
     this.ctx.textAlign = 'center';
-    this.ctx.fillText('OMU CLIMBER', this.canvas.width / 2, 220);
-    this.ctx.fillStyle = '#38bdf8';
-    this.ctx.fillText('OMU CLIMBER', this.canvas.width / 2 - 3, 217);
+    this.ctx.fillText('$REAL Mountain Climber', this.canvas.width / 2, 220);
+    this.ctx.fillStyle = '#81c784';
+    this.ctx.fillText('$REAL Mountain Climber', this.canvas.width / 2 - 2, 218);
 
     // Help instructions
     this.ctx.font = '11px "Press Start 2P", monospace';
@@ -1490,7 +1490,7 @@ export class GameEngine {
     this.ctx.fillText('AVOID THE FALL!', this.canvas.width / 2, 345);
 
     this.ctx.font = '10px "Press Start 2P", monospace';
-    this.ctx.fillStyle = '#94a3b8';
+    this.ctx.fillStyle = '#a3b8a8';
     this.ctx.fillText('A / D OR ARROWS : MOVE LEFT/RIGHT', this.canvas.width / 2, 430);
     this.ctx.fillText('SPACE OR W / UP : JUMP', this.canvas.width / 2, 460);
 
@@ -1498,7 +1498,7 @@ export class GameEngine {
     const blinkVal = Math.floor(Date.now() / 600) % 2;
     if (blinkVal === 0) {
       this.ctx.font = '14px "Press Start 2P", monospace';
-      this.ctx.fillStyle = '#fbbf24';
+      this.ctx.fillStyle = '#aed581';
       this.ctx.fillText('CLICK PLAY TO START', this.canvas.width / 2, 580);
     }
 
@@ -1507,7 +1507,7 @@ export class GameEngine {
 
   private drawGameOverScreen() {
     this.ctx.save();
-    this.ctx.fillStyle = 'rgba(18, 5, 5, 0.82)';
+    this.ctx.fillStyle = 'rgba(5, 18, 5, 0.82)';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Game Over Text
@@ -1529,7 +1529,7 @@ export class GameEngine {
     const blinkVal = Math.floor(Date.now() / 600) % 2;
     if (blinkVal === 0) {
       this.ctx.font = '12px "Press Start 2P", monospace';
-      this.ctx.fillStyle = '#fbbf24';
+      this.ctx.fillStyle = '#aed581';
       this.ctx.fillText('CLICK RESTART TO TRY AGAIN', this.canvas.width / 2, 540);
     }
 

@@ -116,25 +116,25 @@ export default function Home() {
   };
 
   return (
-    <main className={`${isFullscreen ? 'overflow-hidden' : 'min-h-screen'} w-full bg-gradient-to-b from-[#1a0505] via-[#2d0a0a] to-[#1a0505] text-[#e8d5c4] antialiased font-sans`}>
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(120,30,30,0.3),transparent_60%)] pointer-events-none" />
+    <main className={`${isFullscreen ? 'overflow-hidden' : 'min-h-screen'} w-full bg-gradient-to-b from-[#051a0a] via-[#0a2d14] to-[#051a0a] text-[#d4e8d5] antialiased font-sans`}>
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(30,120,40,0.3),transparent_60%)] pointer-events-none" />
 
       {/* Normal page header & highscore (hidden in fullscreen) */}
       {!isFullscreen && (
         <div className="flex flex-col items-center p-4 sm:px-8 sm:pt-8 sm:pb-0">
           <header className="mb-5 text-center select-none z-10 flex flex-col items-center gap-1">
-            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-r from-[#e85d3a] via-[#f4a259] to-[#e85d3a] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
-              OMU CRAZY CLIMBER
+            <h1 className="text-2xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-r from-[#4caf50] via-[#81c784] to-[#4caf50] drop-shadow-[0_2px_4px_rgba(0,0,0,0.6)]">
+              $REAL Mountain Climber
             </h1>
-            <p className="text-[9px] sm:text-xs font-bold text-[#a06050]/80 tracking-widest uppercase font-mono">
+            <p className="text-[9px] sm:text-xs font-bold text-[#50a060]/80 tracking-widest uppercase font-mono">
               How high can you climb?
             </p>
           </header>
 
           <div className="w-full max-w-xl flex flex-col items-center gap-4 z-10">
             <div className="w-full text-center">
-              <span className="text-[9px] font-press-start text-[#705040] tracking-widest uppercase">
-                Best Score: <span className="text-[#f4a259]">{highScore}</span>
+              <span className="text-[9px] font-press-start text-[#407050] tracking-widest uppercase">
+                Best Score: <span className="text-[#81c784]">{highScore}</span>
               </span>
             </div>
           </div>
@@ -142,9 +142,9 @@ export default function Home() {
       )}
 
       {/* Game canvas - always rendered in DOM, only styling changes */}
-      <div className={isFullscreen ? 'fixed inset-0 z-50 bg-[#1a0505] flex items-center justify-center overflow-hidden' : 'w-full max-w-xl mx-auto px-4 pb-4'}>
-        <div className={isFullscreen ? 'relative' : 'w-full relative bg-[#0d0505] rounded-2xl p-2 shadow-[0_16px_32px_rgba(0,0,0,0.6)] border-2 border-[#3a1510] overflow-hidden'} style={isFullscreen ? { width: 'min(100%, calc(100vh * 3 / 4))', aspectRatio: '3/4' } : undefined}>
-          <div className={`relative overflow-hidden bg-[#0a0a12] ${isFullscreen ? 'w-full h-full rounded-none' : 'aspect-[3/4] rounded-xl'}`}>
+      <div className={isFullscreen ? 'fixed inset-0 z-50 bg-[#051a0a] flex items-center justify-center overflow-hidden' : 'w-full max-w-xl mx-auto px-4 pb-4'}>
+        <div className={isFullscreen ? 'relative' : 'w-full relative bg-[#050d08] rounded-2xl p-2 shadow-[0_16px_32px_rgba(0,0,0,0.6)] border-2 border-[#103a15] overflow-hidden'} style={isFullscreen ? { width: 'min(100%, calc(100vh * 3 / 4))', aspectRatio: '3/4' } : undefined}>
+          <div className={`relative overflow-hidden bg-[#0a120a] ${isFullscreen ? 'w-full h-full rounded-none' : 'aspect-[3/4] rounded-xl'}`}>
             <canvas
               ref={canvasRef}
               width={480}
@@ -154,19 +154,19 @@ export default function Home() {
 
             {/* START OVERLAY */}
             {gameState === 'START' && (
-              <div className="absolute inset-0 bg-[#0a0202]/85 flex flex-col items-center justify-center p-6 text-center text-white">
+              <div className="absolute inset-0 bg-[#020a05]/85 flex flex-col items-center justify-center p-6 text-center text-white">
                 {isMobile && !isFullscreen ? (
                   <>
-                    <h2 className="text-lg font-extrabold font-press-start text-[#f4a259] mb-2">TAP TO PLAY</h2>
-                    <p className="text-[9px] font-mono text-[#a08070] mb-5 max-w-xs leading-relaxed">Enter fullscreen to start climbing!</p>
-                    <button onClick={toggleFullscreen} className="px-5 py-2.5 bg-gradient-to-r from-[#e85d3a] to-[#c04020] hover:from-[#f06d4a] hover:to-[#d05030] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#e85d3a]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">ENTER FULLSCREEN</button>
+                    <h2 className="text-lg font-extrabold font-press-start text-[#81c784] mb-2">TAP TO PLAY</h2>
+                    <p className="text-[9px] font-mono text-[#70a080] mb-5 max-w-xs leading-relaxed">Enter fullscreen to start climbing!</p>
+                    <button onClick={toggleFullscreen} className="px-5 py-2.5 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#4caf50]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">ENTER FULLSCREEN</button>
                   </>
                 ) : (
                   <>
-                    <h2 className="text-lg font-extrabold font-press-start text-[#f4a259] mb-2">READY TO CLIMB?</h2>
-                    <p className="text-[9px] font-mono text-[#a08070] mb-5 uppercase max-w-xs leading-relaxed">Use A/D or arrows to move. Collect coins and climb higher!</p>
-                    <p className="text-[7px] font-mono text-[#705040] mb-3">Press any key to start</p>
-                    <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-[#e85d3a] to-[#c04020] hover:from-[#f06d4a] hover:to-[#d05030] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#e85d3a]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">PLAY NOW</button>
+                    <h2 className="text-lg font-extrabold font-press-start text-[#81c784] mb-2">READY TO CLIMB?</h2>
+                    <p className="text-[9px] font-mono text-[#70a080] mb-5 uppercase max-w-xs leading-relaxed">Use A/D or arrows to move. Collect coins and climb higher!</p>
+                    <p className="text-[7px] font-mono text-[#407050] mb-3">Press any key to start</p>
+                    <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#4caf50]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">PLAY NOW</button>
                   </>
                 )}
               </div>
@@ -174,21 +174,21 @@ export default function Home() {
 
             {/* PAUSED OVERLAY */}
             {gameState === 'PAUSED' && (
-              <div className="absolute inset-0 bg-[#0a0202]/85 flex flex-col items-center justify-center p-6 text-center text-white">
-                <h2 className="text-lg font-extrabold font-press-start text-[#f4a259] mb-2 animate-pulse">PAUSED</h2>
-                <p className="text-[9px] font-mono text-[#a08070] mb-5">TAKE A BREATH</p>
-                <button onClick={handlePauseResume} className="px-5 py-2.5 bg-gradient-to-r from-[#f4a259] to-[#d08030] hover:from-[#f5b269] hover:to-[#e09040] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#f4a259]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">RESUME</button>
+              <div className="absolute inset-0 bg-[#020a05]/85 flex flex-col items-center justify-center p-6 text-center text-white">
+                <h2 className="text-lg font-extrabold font-press-start text-[#81c784] mb-2 animate-pulse">PAUSED</h2>
+                <p className="text-[9px] font-mono text-[#70a080] mb-5">TAKE A BREATH</p>
+                <button onClick={handlePauseResume} className="px-5 py-2.5 bg-gradient-to-r from-[#81c784] to-[#388e3c] hover:from-[#aed581] hover:to-[#4caf50] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#81c784]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">RESUME</button>
               </div>
             )}
 
             {/* GAME OVER OVERLAY */}
             {gameState === 'GAME_OVER' && (
-              <div className="absolute inset-0 bg-[#0a0202]/90 flex flex-col items-center justify-center p-6 text-center text-white">
+              <div className="absolute inset-0 bg-[#020a05]/90 flex flex-col items-center justify-center p-6 text-center text-white">
                 <h2 className="text-xl font-extrabold font-press-start text-[#d04030] mb-2 drop-shadow-md">FELL!</h2>
-                <p className="text-[9px] font-press-start text-[#a08070] mt-1 mb-1">SCORE: {score}</p>
-                <p className="text-[9px] font-press-start text-[#f4a259] mb-5">COINS: {coins}</p>
-                <p className="text-[7px] font-mono text-[#705040] mb-3">Press W / ▲ / Space to retry</p>
-                <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-[#d04030] to-[#a03020] hover:from-[#e05040] hover:to-[#b04030] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#d04030]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">TRY AGAIN</button>
+                <p className="text-[9px] font-press-start text-[#70a080] mt-1 mb-1">SCORE: {score}</p>
+                <p className="text-[9px] font-press-start text-[#81c784] mb-5">COINS: {coins}</p>
+                <p className="text-[7px] font-mono text-[#407050] mb-3">Press W / ▲ / Space to retry</p>
+                <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-[#4caf50] to-[#2e7d32] hover:from-[#66bb6a] hover:to-[#388e3c] text-white font-bold font-press-start text-[10px] rounded-xl border-2 border-[#4caf50]/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">TRY AGAIN</button>
               </div>
             )}
 
@@ -236,7 +236,7 @@ export default function Home() {
                     onPointerDown={(e) => { e.preventDefault(); if (coins >= 20) { engineRef.current?.setKeyState('shift', true); engineRef.current?.setKeyState('jump', true); } }}
                     onPointerUp={(e) => { e.preventDefault(); engineRef.current?.setKeyState('shift', false); engineRef.current?.setKeyState('jump', false); }}
                     onPointerLeave={(e) => { e.preventDefault(); engineRef.current?.setKeyState('shift', false); engineRef.current?.setKeyState('jump', false); }}
-                    className={`w-16 h-16 sm:w-20 sm:h-20 border-2 rounded-2xl text-xl sm:text-2xl flex items-center justify-center select-none touch-none font-bold ${coins >= 20 ? 'bg-black/40 border-[#f4a259]/50 text-[#f4a259] active:bg-[#f4a259]/20 cursor-pointer' : 'bg-black/20 border-gray-700 text-gray-600 cursor-not-allowed'}`}
+                    className={`w-16 h-16 sm:w-20 sm:h-20 border-2 rounded-2xl text-xl sm:text-2xl flex items-center justify-center select-none touch-none font-bold ${coins >= 20 ? 'bg-black/40 border-[#81c784]/50 text-[#81c784] active:bg-[#81c784]/20 cursor-pointer' : 'bg-black/20 border-gray-700 text-gray-600 cursor-not-allowed'}`}
                   >▲▲</button>
                 </div>
               </div>
@@ -250,64 +250,63 @@ export default function Home() {
         <div className="flex flex-col items-center px-4 sm:px-8 pb-8">
           <div className="w-full max-w-xl flex flex-col items-center gap-4 z-10">
             {/* Controls */}
-            <section className="w-full bg-[#120606]/90 backdrop-blur-md rounded-xl p-3 shadow-md border border-[#3a1510] flex flex-col gap-2.5 font-mono text-[#c0a090] text-xs">
-              <h3 className="text-[10px] font-bold font-press-start text-[#f4a259] uppercase tracking-wider text-center border-b border-[#3a1510] pb-2">
+            <section className="w-full bg-[#061208]/90 backdrop-blur-md rounded-xl p-3 shadow-md border border-[#103a15] flex flex-col gap-2.5 font-mono text-[#a0c0a0] text-xs">
+              <h3 className="text-[10px] font-bold font-press-start text-[#81c784] uppercase tracking-wider text-center border-b border-[#103a15] pb-2">
                 Controls
               </h3>
               <div className="grid grid-cols-2 gap-2">
-                <div className="flex items-center justify-between bg-[#0a0202]/50 p-1.5 rounded-lg border border-[#2a0f0a]/50 col-span-2">
+                <div className="flex items-center justify-between bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 col-span-2">
                   <span className="text-[10px]">Move</span>
                   <div className="flex gap-0.5">
-                    <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#c0a090] font-sans font-bold text-[9px]">A</kbd>
-                    <span className="text-[7px] text-[#605040] self-center">/</span>
-                    <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#c0a090] font-sans font-bold text-[9px]">D</kbd>
-                    <span className="text-[7px] text-[#605040] self-center mx-0.5">or</span>
-                    <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#c0a090] font-sans font-bold text-[9px]">◀</kbd>
-                    <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#c0a090] font-sans font-bold text-[9px]">▶</kbd>
+                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">A</kbd>
+                    <span className="text-[7px] text-[#406050] self-center">/</span>
+                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">D</kbd>
+                    <span className="text-[7px] text-[#406050] self-center mx-0.5">or</span>
+                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">◀</kbd>
+                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">▶</kbd>
                   </div>
                 </div>
-                <div className="flex items-center justify-between bg-[#0a0202]/50 p-1.5 rounded-lg border border-[#2a0f0a]/50">
+                <div className="flex items-center justify-between bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50">
                   <span className="text-[10px]">Jump</span>
                   <div className="flex gap-0.5">
-                    <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#c0a090] font-sans font-bold text-[9px]">W</kbd>
-                    <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#c0a090] font-sans font-bold text-[9px]">▲</kbd>
-                    <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#c0a090] font-sans font-bold text-[7px]">SPACE</kbd>
+                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">W</kbd>
+                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">▲</kbd>
+                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[7px]">SPACE</kbd>
                   </div>
                 </div>
-                <div className="flex items-center justify-between bg-[#0a0202]/50 p-1.5 rounded-lg border border-[#2a0f0a]/50">
+                <div className="flex items-center justify-between bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50">
                   <span className="text-[10px]">Power Jump <span className="text-[#ffd700]">(costs 20 coins)</span></span>
                   <div className="flex gap-0.5">
-                    <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#f4a259] font-sans font-bold text-[9px]">SHIFT</kbd>
-                    <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#f4a259] font-sans font-bold text-[9px]">▲</kbd>
+                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#81c784] font-sans font-bold text-[9px]">SHIFT</kbd>
+                    <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#81c784] font-sans font-bold text-[9px]">▲</kbd>
                   </div>
                 </div>
-                <div className="flex items-center justify-between bg-[#0a0202]/50 p-1.5 rounded-lg border border-[#2a0f0a]/50 col-span-2">
+                <div className="flex items-center justify-between bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 col-span-2">
                   <span className="text-[10px]">Start / Retry</span>
-                  <kbd className="px-1.5 py-0.5 bg-[#1a0808] border border-[#3a1510] rounded text-[#c0a090] font-sans font-bold text-[9px]">ANY KEY</kbd>
+                  <kbd className="px-1.5 py-0.5 bg-[#081a0c] border border-[#103a15] rounded text-[#a0c0a0] font-sans font-bold text-[9px]">ANY KEY</kbd>
                 </div>
               </div>
             </section>
 
             {/* Mechanics & Platforms Guide */}
-            <section className="w-full bg-[#120606]/90 backdrop-blur-md rounded-xl p-3 shadow-md border border-[#3a1510] flex flex-col gap-2.5 font-mono text-[#c0a090] text-xs">
-              <h3 className="text-[10px] font-bold font-press-start text-[#f4a259] uppercase tracking-wider text-center border-b border-[#3a1510] pb-2">
+            <section className="w-full bg-[#061208]/90 backdrop-blur-md rounded-xl p-3 shadow-md border border-[#103a15] flex flex-col gap-2.5 font-mono text-[#a0c0a0] text-xs">
+              <h3 className="text-[10px] font-bold font-press-start text-[#81c784] uppercase tracking-wider text-center border-b border-[#103a15] pb-2">
                 Platforms & Collectibles
               </h3>
               <div className="flex flex-row flex-wrap gap-2">
-                <div className="flex items-center gap-2 bg-[#0a0202]/50 p-1.5 rounded-lg border border-[#2a0f0a]/50 flex-1 min-w-[160px]">
+                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 flex-1 min-w-[160px]">
                   <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0" style={{ imageRendering: 'pixelated' }}>
-                    <rect x="0" y="8" width="24" height="16" fill="#5d4037" />
-                    <rect x="0" y="8" width="24" height="4" fill="#4caf50" />
-                    <rect x="2" y="8" width="6" height="5" fill="#2e7d32" />
-                    <rect x="16" y="8" width="6" height="5" fill="#2e7d32" />
-                    <rect x="0" y="22" width="24" height="2" fill="#3e2723" />
+                    <rect x="0" y="12" width="24" height="12" fill="#5d4037" />
+                    <rect x="0" y="8" width="24" height="6" fill="#81c784" />
+                    <rect x="2" y="4" width="6" height="8" fill="#4caf50" />
+                    <rect x="14" y="6" width="8" height="6" fill="#4caf50" />
                   </svg>
                   <div className="min-w-0">
-                    <span className="text-[#4caf50] font-bold text-[9px]">Standard</span>
-                    <p className="text-[7px] text-[#807060] leading-tight">Mossy grass-topped dirt blocks. Safe to jump on.</p>
+                    <span className="text-[#81c784] font-bold text-[9px]">Standard</span>
+                    <p className="text-[7px] text-[#608070] leading-tight">Rocky ledges with flowers. Safe to jump on.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-[#0a0202]/50 p-1.5 rounded-lg border border-[#2a0f0a]/50 flex-1 min-w-[160px]">
+                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 flex-1 min-w-[160px]">
                   <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0" style={{ imageRendering: 'pixelated' }}>
                     <rect x="0" y="8" width="24" height="12" rx="4" fill="#5D4037" />
                     <rect x="0" y="20" width="24" height="2" fill="#3E2723" />
@@ -318,10 +317,10 @@ export default function Home() {
                   </svg>
                   <div className="min-w-0">
                     <span className="text-[#8D6E63] font-bold text-[9px]">Log</span>
-                    <p className="text-[7px] text-[#807060] leading-tight">Floating fallen tree log. Moves side to side.</p>
+                    <p className="text-[7px] text-[#608070] leading-tight">Floating fallen tree log. Moves side to side.</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-[#0a0202]/50 p-1.5 rounded-lg border border-[#2a0f0a]/50 flex-1 min-w-[160px]">
+                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 flex-1 min-w-[160px]">
                   <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0" style={{ imageRendering: 'pixelated' }}>
                     <rect x="0" y="8" width="24" height="12" fill="#757575" />
                     <rect x="0" y="20" width="24" height="2" fill="#424242" />
@@ -335,10 +334,10 @@ export default function Home() {
                   </svg>
                   <div className="min-w-0">
                     <span className="text-[#9E9E9E] font-bold text-[9px]">Loose Rock</span>
-                    <p className="text-[7px] text-[#807060] leading-tight">Broken cliff edge. Crumbles when landed on!</p>
+                    <p className="text-[7px] text-[#608070] leading-tight">Broken cliff edge. Crumbles when landed on!</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-[#0a0202]/50 p-1.5 rounded-lg border border-[#2a0f0a]/50 flex-1 min-w-[160px]">
+                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#0f2a15]/50 flex-1 min-w-[160px]">
                   <svg width="20" height="20" viewBox="0 0 24 24" className="shrink-0" style={{ imageRendering: 'pixelated' }}>
                     <rect x="2" y="12" width="20" height="10" rx="3" fill="#64DD17" />
                     <rect x="2" y="22" width="20" height="2" fill="#33691E" />
@@ -348,14 +347,14 @@ export default function Home() {
                   </svg>
                   <div className="min-w-0">
                     <span className="text-[#76FF03] font-bold text-[9px]">Moss</span>
-                    <p className="text-[7px] text-[#807060] leading-tight">Thick bright moss trampoline. Bounces you high!</p>
+                    <p className="text-[7px] text-[#608070] leading-tight">Thick bright moss trampoline. Bounces you high!</p>
                   </div>
                 </div>
-                <div className="flex items-center gap-2 bg-[#0a0202]/50 p-1.5 rounded-lg border border-[#f4a259]/20 flex-1 min-w-[160px]">
+                <div className="flex items-center gap-2 bg-[#020a05]/50 p-1.5 rounded-lg border border-[#81c784]/20 flex-1 min-w-[160px]">
                   <div className="w-5 h-5 shrink-0 rounded-full" style={{ backgroundImage: 'url(/coin.png)', backgroundSize: '600% 100%', backgroundPosition: '0% 0%', imageRendering: 'pixelated' }} />
                   <div className="min-w-0">
                     <span className="text-[#ffd700] font-bold text-[9px]">Gold Coin</span>
-                    <p className="text-[7px] text-[#807060] leading-tight">+50 pts. Spend 20 for Shift mega jump!</p>
+                    <p className="text-[7px] text-[#608070] leading-tight">+50 pts. Spend 20 for Mega Jump!</p>
                   </div>
                 </div>
               </div>

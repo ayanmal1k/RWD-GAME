@@ -30,6 +30,22 @@ interface GlobalWithdrawal {
   createdAt?: any;
 }
 
+interface AdminUserRecord {
+  address: string;
+  totalCoins: number;
+  totalWithdrawnCoins: number;
+  totalWithdrawnTokens: number;
+  gamesPlayedCount: number;
+}
+
+interface LeaderboardPreviewPlayer {
+  rank: number;
+  userAddress: string;
+  score: number;
+  coins: number;
+  dateStr: string;
+}
+
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'withdrawals' | 'stats'>('leaderboard');
 
@@ -48,6 +64,12 @@ export default function AdminPage() {
   const [totalEcosystemCoins, setTotalEcosystemCoins] = useState(0);
   const [totalPaidTokens, setTotalPaidTokens] = useState(0);
   const [totalUsersCount, setTotalUsersCount] = useState(0);
+
+  // All Users detailed records for Metrics Tab
+  const [allUsersList, setAllUsersList] = useState<AdminUserRecord[]>([]);
+
+  // Raw game history entries for Leaderboard Preview
+  const [rawGameHistory, setRawGameHistory] = useState<any[]>([]);
 
   // Fetch Admin Settings
   const fetchSettings = async () => {
@@ -68,7 +90,7 @@ export default function AdminPage() {
   const fetchWithdrawals = async () => {
     setIsLoadingWithdrawals(true);
     try {
-      const q = query(collection(db, 'withdrawals'), orderBy('createdAt', 'desc'), limit(25));
+      const q = query(collection(db, 'withdrawals'), orderBy('createdAt', 'desc'), limit(50));
       const snapshot = await getDocs(q);
       const records: GlobalWithdrawal[] = snapshot.docs.map((doc) => ({
         id: doc.id,
@@ -76,7 +98,6 @@ export default function AdminPage() {
       })) as GlobalWithdrawal[];
       setWithdrawals(records);
 
-      // Sum total paid tokens
       const sumTokens = records.reduce((acc, curr) => acc + (curr.tokensAmount || 0), 0);
       setTotalPaidTokens(sumTokens);
     } catch (err) {
@@ -86,17 +107,48 @@ export default function AdminPage() {
     }
   };
 
-  // Fetch Ecosystem Metrics
-  const fetchMetrics = async () => {
+  // Fetch Ecosystem Metrics & User Details
+  const fetchMetricsAndUsers = async () => {
     try {
       const usersSnap = await getDocs(collection(db, 'users'));
+      const gamesSnap = await getDocs(collection(db, 'game_history'));
+
+      // Tally games played per user
+      const userGamesMap = new Map<string, number>();
+      const gamesList: any[] = [];
+
+      gamesSnap.forEach((doc) => {
+        const data = doc.data();
+        gamesList.push(data);
+        const addr = data.userAddress;
+        if (addr) {
+          userGamesMap.set(addr, (userGamesMap.get(addr) || 0) + 1);
+        }
+      });
+
+      setRawGameHistory(gamesList);
       setTotalUsersCount(usersSnap.size);
 
       let sumCoins = 0;
+      const userRecords: AdminUserRecord[] = [];
+
       usersSnap.forEach((doc) => {
-        sumCoins += Number(doc.data()?.totalCoins || 0);
+        const data = doc.data();
+        const addr = data.address || doc.id;
+        const currentBank = Number(data.totalCoins || 0);
+        sumCoins += currentBank;
+
+        userRecords.push({
+          address: addr,
+          totalCoins: currentBank,
+          totalWithdrawnCoins: Number(data.totalWithdrawnCoins || 0),
+          totalWithdrawnTokens: Number(data.totalWithdrawnTokens || 0),
+          gamesPlayedCount: userGamesMap.get(addr) || 0,
+        });
       });
+
       setTotalEcosystemCoins(sumCoins);
+      setAllUsersList(userRecords);
     } catch (err) {
       console.error('Failed to fetch ecosystem metrics:', err);
     }
@@ -105,7 +157,7 @@ export default function AdminPage() {
   useEffect(() => {
     fetchSettings();
     fetchWithdrawals();
-    fetchMetrics();
+    fetchMetricsAndUsers();
   }, []);
 
   const handleSaveSettings = async (e: React.FormEvent) => {
@@ -134,6 +186,62 @@ export default function AdminPage() {
       setIsSavingSettings(false);
     }
   };
+
+  // Compute Leaderboard Preview Top 10 (Regardless of toggle status)
+  const computeLeaderboardPreview = (): LeaderboardPreviewPlayer[] => {
+    let startMs = 0;
+    let endMs = Infinity;
+
+    if (startDate) {
+      startMs = new Date(startDate).getTime();
+    }
+    if (endDate) {
+      endMs = new Date(endDate + 'T23:59:59').getTime();
+    }
+
+    // Filter game entries by date range
+    const filteredGames = rawGameHistory.filter((g) => {
+      let timeMs = 0;
+      if (g.createdAt?.seconds) {
+        timeMs = g.createdAt.seconds * 1000;
+      } else if (g.createdAt) {
+        timeMs = new Date(g.createdAt).getTime();
+      } else {
+        timeMs = Date.now();
+      }
+      return timeMs >= startMs && timeMs <= endMs;
+    });
+
+    // Sort descending by score
+    filteredGames.sort((a, b) => Number(b.score || 0) - Number(a.score || 0));
+
+    // Deduplicate: 1 highest score per user
+    const userBestMap = new Map<string, any>();
+    filteredGames.forEach((g) => {
+      const addr = g.userAddress || 'Anonymous';
+      if (!userBestMap.has(addr)) {
+        userBestMap.set(addr, g);
+      }
+    });
+
+    return Array.from(userBestMap.values())
+      .slice(0, 10)
+      .map((g, idx) => {
+        let dateStr = 'Recent';
+        if (g.createdAt?.seconds) {
+          dateStr = new Date(g.createdAt.seconds * 1000).toLocaleDateString();
+        }
+        return {
+          rank: idx + 1,
+          userAddress: g.userAddress || 'Anonymous',
+          score: g.score || 0,
+          coins: g.coins || 0,
+          dateStr,
+        };
+      });
+  };
+
+  const leaderboardPreview = computeLeaderboardPreview();
 
   return (
     <main className="min-h-screen bg-[#0a0802] text-[#fef08a] antialiased py-10 px-4 sm:px-6 lg:px-8">
@@ -186,83 +294,130 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* TAB 1: LEADERBOARD SETTINGS */}
+        {/* TAB 1: LEADERBOARD SETTINGS & TOP 10 PREVIEW */}
         {activeTab === 'leaderboard' && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl"
+            className="space-y-6"
           >
-            <h2 className="text-sm font-bold font-press-start text-yellow-300 flex items-center gap-2">
-              <Trophy className="w-4 h-4 text-yellow-400" /> LEADERBOARD CONFIGURATION
-            </h2>
+            {/* Form Card */}
+            <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
+              <h2 className="text-sm font-bold font-press-start text-yellow-300 flex items-center gap-2">
+                <Trophy className="w-4 h-4 text-yellow-400" /> LEADERBOARD CONFIGURATION
+              </h2>
 
-            <form onSubmit={handleSaveSettings} className="space-y-6">
-
-              {/* Toggle Switch */}
-              <div className="flex items-center justify-between p-4 bg-[#0a0802] border border-yellow-500/20 rounded-2xl">
-                <div className="space-y-1">
-                  <span className="text-xs font-mono font-bold text-amber-300 block">ENABLE LEADERBOARD</span>
-                  <span className="text-[10px] font-mono text-amber-400/60 block">
-                    Turn leaderboard display ON or OFF for all players.
-                  </span>
+              <form onSubmit={handleSaveSettings} className="space-y-6">
+                {/* Toggle Switch */}
+                <div className="flex items-center justify-between p-4 bg-[#0a0802] border border-yellow-500/20 rounded-2xl">
+                  <div className="space-y-1">
+                    <span className="text-xs font-mono font-bold text-amber-300 block">ENABLE LEADERBOARD</span>
+                    <span className="text-[10px] font-mono text-amber-400/60 block">
+                      Turn leaderboard display ON or OFF for all players.
+                    </span>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={() => setIsLeaderboardEnabled(!isLeaderboardEnabled)}
+                    className="cursor-pointer text-yellow-400 hover:scale-105 transition-transform"
+                  >
+                    {isLeaderboardEnabled ? (
+                      <ToggleRight className="w-10 h-10 text-yellow-400" />
+                    ) : (
+                      <ToggleLeft className="w-10 h-10 text-amber-950" />
+                    )}
+                  </button>
                 </div>
+
+                {/* Date Range Selectors */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                  <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-4 space-y-2">
+                    <label className="text-[10px] font-mono font-bold text-amber-400 uppercase flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-yellow-400" /> START DATE
+                    </label>
+                    <input
+                      type="date"
+                      value={startDate}
+                      onChange={(e) => setStartDate(e.target.value)}
+                      className="w-full bg-transparent font-mono text-sm font-bold text-yellow-200 focus:outline-none cursor-pointer"
+                    />
+                  </div>
+
+                  <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-4 space-y-2">
+                    <label className="text-[10px] font-mono font-bold text-amber-400 uppercase flex items-center gap-1.5">
+                      <Calendar className="w-3.5 h-3.5 text-yellow-400" /> END DATE
+                    </label>
+                    <input
+                      type="date"
+                      value={endDate}
+                      onChange={(e) => setEndDate(e.target.value)}
+                      className="w-full bg-transparent font-mono text-sm font-bold text-yellow-200 focus:outline-none cursor-pointer"
+                    />
+                  </div>
+                </div>
+
+                {/* Save Success Alert */}
+                {saveSuccessMsg && (
+                  <div className="p-4 bg-yellow-500/10 border border-yellow-500/40 rounded-2xl flex items-center gap-2 text-xs font-mono text-yellow-300 font-bold">
+                    <CheckCircle2 className="w-4 h-4 text-yellow-400" /> Leaderboard settings saved successfully!
+                  </div>
+                )}
+
+                {/* Save Button */}
                 <button
-                  type="button"
-                  onClick={() => setIsLeaderboardEnabled(!isLeaderboardEnabled)}
-                  className="cursor-pointer text-yellow-400 hover:scale-105 transition-transform"
+                  type="submit"
+                  disabled={isSavingSettings}
+                  className="w-full py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs rounded-2xl shadow-[0_0_20px_rgba(234,179,8,0.4)] transition-all cursor-pointer disabled:opacity-50"
                 >
-                  {isLeaderboardEnabled ? (
-                    <ToggleRight className="w-10 h-10 text-yellow-400" />
-                  ) : (
-                    <ToggleLeft className="w-10 h-10 text-amber-950" />
-                  )}
+                  {isSavingSettings ? 'SAVING SETTINGS...' : 'SAVE LEADERBOARD CONFIGURATION'}
                 </button>
+              </form>
+            </div>
+
+            {/* TOP 10 DATE-FILTERED LEADERBOARD PREVIEW */}
+            <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between pb-2 border-b border-yellow-500/20">
+                <h3 className="text-xs font-bold font-press-start text-amber-300 flex items-center gap-2">
+                  <Trophy className="w-4 h-4 text-yellow-400" /> TOP 10 PLAYERS FOR SELECTED DATE RANGE
+                </h3>
+                <span className="text-[10px] font-mono text-yellow-400/80 bg-yellow-500/10 px-2.5 py-0.5 rounded-full border border-yellow-500/30">
+                  {startDate || 'Beginning'} to {endDate || 'Present'}
+                </span>
               </div>
 
-              {/* Date Range Selectors */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-4 space-y-2">
-                  <label className="text-[10px] font-mono font-bold text-amber-400 uppercase flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-yellow-400" /> START DATE
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    className="w-full bg-transparent font-mono text-sm font-bold text-yellow-200 focus:outline-none cursor-pointer"
-                  />
-                </div>
-
-                <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-4 space-y-2">
-                  <label className="text-[10px] font-mono font-bold text-amber-400 uppercase flex items-center gap-1.5">
-                    <Calendar className="w-3.5 h-3.5 text-yellow-400" /> END DATE
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    className="w-full bg-transparent font-mono text-sm font-bold text-yellow-200 focus:outline-none cursor-pointer"
-                  />
-                </div>
-              </div>
-
-              {/* Save Success Alert */}
-              {saveSuccessMsg && (
-                <div className="p-4 bg-yellow-500/10 border border-yellow-500/40 rounded-2xl flex items-center gap-2 text-xs font-mono text-yellow-300 font-bold">
-                  <CheckCircle2 className="w-4 h-4 text-yellow-400" /> Leaderboard settings saved successfully!
+              {leaderboardPreview.length === 0 ? (
+                <p className="text-xs font-mono text-amber-200/50 py-8 text-center">
+                  No games played in the selected date range.
+                </p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead>
+                      <tr className="text-amber-400/70 border-b border-yellow-500/20 text-[10px] uppercase">
+                        <th className="pb-3">RANK</th>
+                        <th className="pb-3">PLAYER WALLET</th>
+                        <th className="pb-3">SCORE</th>
+                        <th className="pb-3">COINS EARNED</th>
+                        <th className="pb-3 text-right">DATE</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-yellow-500/10">
+                      {leaderboardPreview.map((player) => (
+                        <tr key={player.rank} className="hover:bg-yellow-500/5 transition-colors">
+                          <td className="py-3 font-bold text-yellow-400">#{player.rank}</td>
+                          <td className="py-3 font-bold text-yellow-200 select-all font-mono">
+                            {player.userAddress}
+                          </td>
+                          <td className="py-3 font-bold text-amber-300">{player.score.toLocaleString()} PTS</td>
+                          <td className="py-3 font-bold text-yellow-300">{player.coins.toLocaleString()} COINS</td>
+                          <td className="py-3 text-right text-amber-400/80 text-[10px]">{player.dateStr}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
                 </div>
               )}
-
-              {/* Save Button */}
-              <button
-                type="submit"
-                disabled={isSavingSettings}
-                className="w-full py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs rounded-2xl shadow-[0_0_20px_rgba(234,179,8,0.4)] transition-all cursor-pointer disabled:opacity-50"
-              >
-                {isSavingSettings ? 'SAVING SETTINGS...' : 'SAVE LEADERBOARD CONFIGURATION'}
-              </button>
-            </form>
+            </div>
           </motion.div>
         )}
 
@@ -304,8 +459,8 @@ export default function AdminPage() {
                   <tbody className="divide-y divide-yellow-500/10">
                     {withdrawals.map((rec) => (
                       <tr key={rec.id} className="hover:bg-yellow-500/5 transition-colors">
-                        <td className="py-3.5 font-bold text-yellow-200">
-                          {rec.userAddress ? `${rec.userAddress.slice(0, 4)}...${rec.userAddress.slice(-4)}` : 'Unknown'}
+                        <td className="py-3.5 font-bold text-yellow-200 select-all font-mono">
+                          {rec.userAddress}
                         </td>
                         <td className="py-3.5 text-yellow-300 font-bold">{rec.coinsAmount} COINS</td>
                         <td className="py-3.5 text-amber-400 font-bold">{rec.tokensAmount} $REAL</td>
@@ -333,44 +488,98 @@ export default function AdminPage() {
           </motion.div>
         )}
 
-        {/* TAB 3: ECOSYSTEM METRICS */}
+        {/* TAB 3: ECOSYSTEM METRICS & ALL USERS MANAGEMENT */}
         {activeTab === 'stats' && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-6"
+            className="space-y-6"
           >
-            <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 space-y-2 shadow-xl">
-              <div className="flex items-center justify-between text-amber-400">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider">ECOSYSTEM BANK COINS</span>
-                <Coins className="w-5 h-5 text-yellow-400" />
+            {/* Top Cards */}
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+              <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 space-y-2 shadow-xl">
+                <div className="flex items-center justify-between text-amber-400">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">ECOSYSTEM BANK COINS</span>
+                  <Coins className="w-5 h-5 text-yellow-400" />
+                </div>
+                <span className="text-2xl sm:text-3xl font-extrabold font-press-start text-yellow-300 block">
+                  {totalEcosystemCoins.toLocaleString()}
+                </span>
+                <span className="text-[10px] font-mono text-amber-400/60 block">Total coins held across all player banks</span>
               </div>
-              <span className="text-2xl sm:text-3xl font-extrabold font-press-start text-yellow-300 block">
-                {totalEcosystemCoins.toLocaleString()}
-              </span>
-              <span className="text-[10px] font-mono text-amber-400/60 block">Total coins held across all player banks</span>
+
+              <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 space-y-2 shadow-xl">
+                <div className="flex items-center justify-between text-amber-400">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">TOTAL TOKENS PAID</span>
+                  <Sparkles className="w-5 h-5 text-amber-400" />
+                </div>
+                <span className="text-2xl sm:text-3xl font-extrabold font-press-start text-amber-300 block">
+                  {totalPaidTokens.toLocaleString()} <span className="text-xs">$REAL</span>
+                </span>
+                <span className="text-[10px] font-mono text-amber-400/60 block">Total tokens distributed via treasury</span>
+              </div>
+
+              <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 space-y-2 shadow-xl">
+                <div className="flex items-center justify-between text-amber-400">
+                  <span className="text-[10px] font-mono font-bold uppercase tracking-wider">TOTAL PLAYERS</span>
+                  <Users className="w-5 h-5 text-yellow-400" />
+                </div>
+                <span className="text-2xl sm:text-3xl font-extrabold font-press-start text-yellow-200 block">
+                  {totalUsersCount.toLocaleString()}
+                </span>
+                <span className="text-[10px] font-mono text-amber-400/60 block">Registered player wallets in database</span>
+              </div>
             </div>
 
-            <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 space-y-2 shadow-xl">
-              <div className="flex items-center justify-between text-amber-400">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider">TOTAL TOKENS PAID</span>
-                <Sparkles className="w-5 h-5 text-amber-400" />
+            {/* FULL USERS DATA TABLE UNDER METRICS */}
+            <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 sm:p-8 space-y-4 shadow-2xl">
+              <div className="flex items-center justify-between pb-2 border-b border-yellow-500/20">
+                <h3 className="text-xs font-bold font-press-start text-yellow-300 flex items-center gap-2">
+                  <Users className="w-4 h-4 text-yellow-400" /> ALL PLAYERS DIRECTORY
+                </h3>
+                <span className="text-[10px] font-mono text-amber-400/80 bg-yellow-500/10 px-3 py-1 rounded-full border border-yellow-500/30">
+                  {allUsersList.length} WALLETS REGISTERED
+                </span>
               </div>
-              <span className="text-2xl sm:text-3xl font-extrabold font-press-start text-amber-300 block">
-                {totalPaidTokens.toLocaleString()} <span className="text-xs">$REAL</span>
-              </span>
-              <span className="text-[10px] font-mono text-amber-400/60 block">Total tokens distributed via treasury</span>
-            </div>
 
-            <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 space-y-2 shadow-xl">
-              <div className="flex items-center justify-between text-amber-400">
-                <span className="text-[10px] font-mono font-bold uppercase tracking-wider">TOTAL PLAYERS</span>
-                <Users className="w-5 h-5 text-yellow-400" />
-              </div>
-              <span className="text-2xl sm:text-3xl font-extrabold font-press-start text-yellow-200 block">
-                {totalUsersCount.toLocaleString()}
-              </span>
-              <span className="text-[10px] font-mono text-amber-400/60 block">Registered player wallets in database</span>
+              {allUsersList.length === 0 ? (
+                <p className="text-xs font-mono text-amber-200/50 py-12 text-center">No player records found in database.</p>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-left text-xs font-mono">
+                    <thead>
+                      <tr className="text-amber-400/70 border-b border-yellow-500/20 text-[10px] uppercase">
+                        <th className="pb-3">FULL WALLET ADDRESS</th>
+                        <th className="pb-3">BANKED COINS</th>
+                        <th className="pb-3">WITHDRAWN COINS</th>
+                        <th className="pb-3">WITHDRAWN TOKENS</th>
+                        <th className="pb-3 text-right">TOTAL GAMES PLAYED</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-yellow-500/10">
+                      {allUsersList.map((user) => (
+                        <tr key={user.address} className="hover:bg-yellow-500/5 transition-colors">
+                          <td className="py-3.5 font-bold text-yellow-200 select-all font-mono">
+                            {user.address}
+                          </td>
+                          <td className="py-3.5 text-yellow-300 font-bold">
+                            {user.totalCoins.toLocaleString()} COINS
+                          </td>
+                          <td className="py-3.5 text-amber-400 font-bold">
+                            {user.totalWithdrawnCoins.toLocaleString()} COINS
+                          </td>
+                          <td className="py-3.5 text-amber-300 font-bold">
+                            {user.totalWithdrawnTokens.toLocaleString()} $REAL
+                          </td>
+                          <td className="py-3.5 text-right font-extrabold text-yellow-200">
+                            {user.gamesPlayedCount} GAMES
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
             </div>
           </motion.div>
         )}

@@ -319,59 +319,61 @@ export default function Home() {
 
             {/* START OVERLAY */}
             {gameState === 'START' && (
-              <div className="absolute inset-0 bg-[#0a0802] flex flex-col items-center justify-center p-6 text-center text-white z-40">
-                 <h1 className="text-3xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-amber-400 to-yellow-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] mb-8">
+              <div className="absolute inset-0 bg-[#0a0802] flex flex-col items-center justify-center p-3 sm:p-6 text-center text-white z-40 overflow-y-auto custom-scrollbar">
+                 <h1 className="text-2xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-amber-400 to-yellow-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] mb-4 sm:mb-8 shrink-0">
                    $REAL CLIMBER
                  </h1>
 
-                 <div className="relative w-32 h-32 sm:w-40 sm:h-40 mb-12">
+                 <div className="relative w-20 h-20 sm:w-40 sm:h-40 mb-4 sm:mb-8 shrink-0">
                    <img 
                      src="/idle.png" 
                      alt="Character Idle" 
                      className="w-full h-full object-contain pixelated animate-breathe drop-shadow-[0_0_15px_rgba(250,204,21,0.3)]"
                    />
-                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-16 h-3 bg-black/60 rounded-[50%] blur-sm animate-shadow-breathe"></div>
+                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 sm:w-16 h-2 sm:h-3 bg-black/60 rounded-[50%] blur-sm animate-shadow-breathe"></div>
                  </div>
 
-                 <div className="flex flex-col sm:flex-row gap-3">
+                 <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full max-w-sm justify-center shrink-0">
                    <button 
                      onClick={handlePlayClick}
-                     className="px-8 py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs sm:text-sm rounded-2xl border-4 border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.5)] hover:shadow-[0_0_35px_rgba(234,179,8,0.8)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                     className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 sm:border-4 border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.5)] hover:shadow-[0_0_35px_rgba(234,179,8,0.8)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
                    >
                      {primaryWallet ? "PLAY NOW" : "CONNECT TO PLAY"}
                    </button>
-                   <button 
-                     onClick={handleOpenHistory}
-                     className="px-5 py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-xs rounded-2xl border-2 border-yellow-500/40 flex items-center justify-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
-                   >
-                     <History className="w-4 h-4 text-amber-400" />
-                     HISTORY
-                   </button>
-                   <button 
-                     onClick={handleOpenLeaderboard}
-                     className="px-5 py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-xs rounded-2xl border-2 border-yellow-500/40 flex items-center justify-center gap-2 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
-                   >
-                     <Trophy className="w-4 h-4 text-yellow-400" />
-                     LEADERBOARD
-                   </button>
+                   <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+                     <button 
+                       onClick={handleOpenHistory}
+                       className="px-3 py-2.5 sm:px-5 sm:py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-[10px] sm:text-xs rounded-2xl border border-yellow-500/40 flex items-center justify-center gap-1.5 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                     >
+                       <History className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                       HISTORY
+                     </button>
+                     <button 
+                       onClick={handleOpenLeaderboard}
+                       className="px-3 py-2.5 sm:px-5 sm:py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-[10px] sm:text-xs rounded-2xl border border-yellow-500/40 flex items-center justify-center gap-1.5 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                     >
+                       <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400" />
+                       RANKINGS
+                     </button>
+                   </div>
                  </div>
 
                  {/* EMBEDDED LEADERBOARD PREVIEW (BELOW BUTTONS) */}
                  {leaderboardData && leaderboardData.enabled && (
-                   <div className="mt-6 w-full max-w-sm bg-[#171206]/90 border border-yellow-500/30 rounded-2xl p-3 shadow-lg text-left space-y-2">
-                     <div className="flex items-center justify-between text-[10px] font-press-start text-yellow-400 pb-1 border-b border-yellow-500/15">
-                       <span className="flex items-center gap-1.5"><Trophy className="w-3.5 h-3.5 text-yellow-400" /> TOP CLIMBERS</span>
+                   <div className="mt-4 sm:mt-6 w-full max-w-sm bg-[#171206]/90 border border-yellow-500/30 rounded-2xl p-2.5 sm:p-3 shadow-lg text-left space-y-1.5 shrink-0">
+                     <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-press-start text-yellow-400 pb-1 border-b border-yellow-500/15">
+                       <span className="flex items-center gap-1.5"><Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-400" /> TOP CLIMBERS</span>
                        {leaderboardData.startDate && leaderboardData.endDate && (
-                         <span className="text-[8px] font-mono text-amber-400/70">{leaderboardData.startDate} to {leaderboardData.endDate}</span>
+                         <span className="text-[7px] sm:text-[8px] font-mono text-amber-400/70">{leaderboardData.startDate} - {leaderboardData.endDate}</span>
                        )}
                      </div>
                      <div className="space-y-1">
                        {leaderboardData.topPlayers.slice(0, 3).map((player) => (
-                         <div key={player.rank} className="flex items-center justify-between text-[10px] font-mono bg-black/40 px-2.5 py-1 rounded-lg border border-yellow-500/10">
-                           <span className="font-bold text-amber-300">
+                         <div key={player.rank} className="flex items-center justify-between text-[9px] sm:text-[10px] font-mono bg-black/40 px-2 py-1 rounded-lg border border-yellow-500/10">
+                           <span className="font-bold text-amber-300 truncate max-w-[140px] sm:max-w-[180px]">
                              #{player.rank} {player.userAddress.slice(0, 4)}...{player.userAddress.slice(-4)}
                            </span>
-                           <span className="font-press-start text-[9px] text-yellow-400">{player.score} PTS</span>
+                           <span className="font-press-start text-[8px] sm:text-[9px] text-yellow-400">{player.score} PTS</span>
                          </div>
                        ))}
                      </div>
@@ -379,7 +381,7 @@ export default function Home() {
                  )}
 
                  {isMobile && !isFullscreen && (
-                   <p className="mt-4 text-[9px] font-mono text-amber-400/70">Game will launch in fullscreen mode.</p>
+                   <p className="mt-2 text-[8px] sm:text-[9px] font-mono text-amber-400/70 shrink-0">Tap PLAY to enter game view.</p>
                  )}
               </div>
             )}
@@ -408,25 +410,25 @@ export default function Home() {
 
             {/* HISTORY MODAL */}
             {showHistoryModal && (
-              <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
-                <div className="w-full max-w-lg bg-[#0a0802] border-2 border-yellow-500/40 rounded-3xl p-6 shadow-[0_0_50px_rgba(234,179,8,0.25)] text-white relative flex flex-col max-h-[85vh]">
-                  <div className="flex items-center justify-between pb-4 border-b border-yellow-500/20 mb-4">
+              <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-[200]">
+                <div className="w-full max-w-lg bg-[#0a0802] border-2 border-yellow-500/40 rounded-3xl p-4 sm:p-6 shadow-[0_0_50px_rgba(234,179,8,0.25)] text-white relative flex flex-col max-h-[90vh] sm:max-h-[85vh]">
+                  <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-yellow-500/20 mb-3 sm:mb-4">
                     <div className="flex items-center gap-2">
-                      <History className="w-5 h-5 text-yellow-400" />
-                      <h3 className="text-xs font-bold font-press-start text-yellow-300">RECENT GAME LOGS</h3>
+                      <History className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                      <h3 className="text-[10px] sm:text-xs font-bold font-press-start text-yellow-300">RECENT GAME LOGS</h3>
                     </div>
                     <button 
                       onClick={() => setShowHistoryModal(false)}
-                      className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-amber-400"
+                      className="p-1.5 sm:p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-amber-400"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
 
-                  <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar">
+                  <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar space-y-2">
                     {isLoadingHistory ? (
                       <div className="py-12 text-center text-xs font-mono text-amber-400/80 animate-pulse">
-                        Loading game logs from Firestore...
+                        Loading your game logs...
                       </div>
                     ) : historyLogs.length === 0 ? (
                       <div className="py-12 text-center text-xs font-mono text-amber-200/50">
@@ -437,7 +439,7 @@ export default function Home() {
                         {historyLogs.map((item, idx) => (
                           <div 
                             key={item.id || idx}
-                            className="bg-[#171206]/80 border border-yellow-500/20 rounded-xl p-3 flex items-center justify-between text-xs font-mono"
+                            className="bg-[#171206]/80 border border-yellow-500/20 rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-xs font-mono"
                           >
                             <div className="flex flex-col gap-0.5">
                               <span className="text-[10px] text-amber-400/80 font-bold">
@@ -448,7 +450,7 @@ export default function Home() {
                                 <span className="flex items-center gap-1 text-amber-400 text-[10px]"><Coins className="w-3 h-3 text-yellow-400" /> {item.coins}</span>
                               </div>
                             </div>
-                            <div className="flex items-center gap-1.5 text-[10px] text-amber-200/70 bg-black/40 px-2.5 py-1 rounded-lg border border-yellow-500/10">
+                            <div className="flex items-center gap-1.5 text-[10px] text-amber-200/70 bg-black/40 px-2 py-1 rounded-lg border border-yellow-500/10">
                               <Clock className="w-3 h-3 text-yellow-400" />
                               <span>{item.durationSeconds}s</span>
                             </div>
@@ -463,22 +465,22 @@ export default function Home() {
 
             {/* LEADERBOARD MODAL */}
             {showLeaderboardModal && (
-              <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-4 z-[200]">
-                <div className="w-full max-w-lg bg-[#0a0802] border-2 border-yellow-500/40 rounded-3xl p-6 shadow-[0_0_50px_rgba(234,179,8,0.25)] text-white relative flex flex-col max-h-[85vh]">
-                  <div className="flex items-center justify-between pb-4 border-b border-yellow-500/20 mb-4">
+              <div className="fixed inset-0 bg-black/85 backdrop-blur-md flex items-center justify-center p-3 sm:p-4 z-[200]">
+                <div className="w-full max-w-lg bg-[#0a0802] border-2 border-yellow-500/40 rounded-3xl p-4 sm:p-6 shadow-[0_0_50px_rgba(234,179,8,0.25)] text-white relative flex flex-col max-h-[90vh] sm:max-h-[85vh]">
+                  <div className="flex items-center justify-between pb-3 sm:pb-4 border-b border-yellow-500/20 mb-3 sm:mb-4">
                     <div className="flex items-center gap-2">
-                      <Trophy className="w-5 h-5 text-yellow-400" />
-                      <h3 className="text-xs font-bold font-press-start text-yellow-300">CLIMBER LEADERBOARD</h3>
+                      <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
+                      <h3 className="text-[10px] sm:text-xs font-bold font-press-start text-yellow-300">CLIMBER LEADERBOARD</h3>
                     </div>
                     <button 
                       onClick={() => setShowLeaderboardModal(false)}
-                      className="p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-amber-400"
+                      className="p-1.5 sm:p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-amber-400"
                     >
-                      <X className="w-5 h-5" />
+                      <X className="w-4 h-4 sm:w-5 sm:h-5" />
                     </button>
                   </div>
 
-                  <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar space-y-3">
+                  <div className="overflow-y-auto flex-1 pr-1 custom-scrollbar space-y-2.5">
                     {isLoadingLeaderboard ? (
                       <div className="py-12 text-center text-xs font-mono text-amber-400/80 animate-pulse">
                         Fetching leaderboard rankings...
@@ -495,36 +497,34 @@ export default function Home() {
                     ) : (
                       <div className="flex flex-col gap-2">
                         {leaderboardData.startDate && leaderboardData.endDate && (
-                          <div className="text-[10px] font-mono text-amber-400/70 bg-[#171206] px-3 py-1.5 rounded-lg border border-yellow-500/20 text-center">
+                          <div className="text-[9px] sm:text-[10px] font-mono text-amber-400/70 bg-[#171206] px-3 py-1.5 rounded-lg border border-yellow-500/20 text-center">
                             Active Season: <span className="font-bold text-yellow-300">{leaderboardData.startDate}</span> to <span className="font-bold text-yellow-300">{leaderboardData.endDate}</span>
                           </div>
                         )}
                         {leaderboardData.topPlayers.map((player) => (
                           <div 
                             key={player.rank}
-                            className={`border rounded-xl p-3 flex items-center justify-between text-xs font-mono transition-all ${
+                            className={`border rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-[11px] sm:text-xs font-mono transition-all ${
                               player.rank === 1
                                 ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.2)]'
                                 : 'bg-[#171206]/80 border-yellow-500/20'
                             }`}
                           >
-                            <div className="flex items-center gap-3">
-                              <span className={`w-6 h-6 rounded-lg flex items-center justify-center font-press-start text-[10px] font-bold ${
+                            <div className="flex items-center gap-2 sm:gap-3 min-w-0">
+                              <span className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 rounded-lg flex items-center justify-center font-press-start text-[9px] sm:text-[10px] font-bold ${
                                 player.rank === 1 ? 'bg-yellow-400 text-black' : player.rank === 2 ? 'bg-amber-300/80 text-black' : player.rank === 3 ? 'bg-amber-600/80 text-white' : 'bg-black/40 text-amber-400/70'
                               }`}>
                                 #{player.rank}
                               </span>
-                              <div className="flex flex-col">
-                                <span className="font-bold text-yellow-200">
+                              <div className="flex flex-col min-w-0">
+                                <span className="font-bold text-yellow-200 truncate text-[10px] sm:text-xs">
                                   {player.userAddress ? `${player.userAddress.slice(0, 4)}...${player.userAddress.slice(-4)}` : 'Anonymous'}
                                 </span>
-                                <span className="text-[10px] text-amber-400/60">{player.durationSeconds}s duration</span>
                               </div>
                             </div>
-                            <div className="text-right">
-                              <span className="font-press-start text-[11px] text-yellow-300 block">{player.score} PTS</span>
-                              <span className="text-[10px] text-amber-400 font-bold">{player.coins} Coins</span>
-                            </div>
+                            <span className="font-press-start text-[8px] sm:text-[10px] text-yellow-400 shrink-0 ml-2">
+                              {player.score} PTS
+                            </span>
                           </div>
                         ))}
                       </div>
@@ -550,35 +550,35 @@ export default function Home() {
               </div>
             )}
 
-            {/* Mobile touch controls (bottom of canvas in fullscreen) */}
-            {isFullscreen && isMobile && (
-              <div className="absolute bottom-0 left-0 right-0 z-40 flex items-end justify-between p-1 pb-2" style={{ touchAction: 'manipulation' }}>
-                <div className="flex gap-2">
+            {/* Mobile touch controls */}
+            {isMobile && gameState === 'PLAYING' && (
+              <div className={`${isFullscreen ? 'fixed bottom-4 left-4 right-4 z-50' : 'absolute bottom-2 left-2 right-2 z-40'} flex items-end justify-between select-none touch-none`} style={{ touchAction: 'manipulation' }}>
+                <div className="flex gap-1.5 sm:gap-2">
                   <button
                     onPointerDown={(e) => { e.preventDefault(); engineRef.current?.setKeyState('left', true); }}
                     onPointerUp={(e) => { e.preventDefault(); engineRef.current?.setKeyState('left', false); }}
                     onPointerLeave={(e) => { e.preventDefault(); engineRef.current?.setKeyState('left', false); }}
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-black/40 border-2 border-white/20 rounded-2xl text-white text-2xl sm:text-3xl flex items-center justify-center active:bg-white/20 select-none touch-none"
+                    className="w-14 h-14 sm:w-18 sm:h-18 bg-black/60 backdrop-blur-md border-2 border-yellow-500/40 rounded-2xl text-yellow-300 text-xl sm:text-2xl flex items-center justify-center active:bg-yellow-500/30 select-none touch-none shadow-lg"
                   >◀</button>
                   <button
                     onPointerDown={(e) => { e.preventDefault(); engineRef.current?.setKeyState('right', true); }}
                     onPointerUp={(e) => { e.preventDefault(); engineRef.current?.setKeyState('right', false); }}
                     onPointerLeave={(e) => { e.preventDefault(); engineRef.current?.setKeyState('right', false); }}
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-black/40 border-2 border-white/20 rounded-2xl text-white text-2xl sm:text-3xl flex items-center justify-center active:bg-white/20 select-none touch-none"
+                    className="w-14 h-14 sm:w-18 sm:h-18 bg-black/60 backdrop-blur-md border-2 border-yellow-500/40 rounded-2xl text-yellow-300 text-xl sm:text-2xl flex items-center justify-center active:bg-yellow-500/30 select-none touch-none shadow-lg"
                   >▶</button>
                 </div>
-                <div className="flex gap-2">
+                <div className="flex gap-1.5 sm:gap-2">
                   <button
                     onPointerDown={(e) => { e.preventDefault(); engineRef.current?.setKeyState('jump', true); }}
                     onPointerUp={(e) => { e.preventDefault(); engineRef.current?.setKeyState('jump', false); }}
                     onPointerLeave={(e) => { e.preventDefault(); engineRef.current?.setKeyState('jump', false); }}
-                    className="w-16 h-16 sm:w-20 sm:h-20 bg-black/40 border-2 border-white/20 rounded-2xl text-white text-2xl sm:text-3xl flex items-center justify-center active:bg-white/20 select-none touch-none"
+                    className="w-14 h-14 sm:w-18 sm:h-18 bg-black/60 backdrop-blur-md border-2 border-yellow-500/40 rounded-2xl text-yellow-300 text-xl sm:text-2xl flex items-center justify-center active:bg-yellow-500/30 select-none touch-none shadow-lg"
                   >▲</button>
                   <button
                     onPointerDown={(e) => { e.preventDefault(); if (coins >= 20) { engineRef.current?.setKeyState('shift', true); engineRef.current?.setKeyState('jump', true); } }}
                     onPointerUp={(e) => { e.preventDefault(); engineRef.current?.setKeyState('shift', false); engineRef.current?.setKeyState('jump', false); }}
                     onPointerLeave={(e) => { e.preventDefault(); engineRef.current?.setKeyState('shift', false); engineRef.current?.setKeyState('jump', false); }}
-                    className={`w-16 h-16 sm:w-20 sm:h-20 border-2 rounded-2xl text-xl sm:text-2xl flex items-center justify-center select-none touch-none font-bold ${coins >= 20 ? 'bg-black/40 border-[#81c784]/50 text-[#81c784] active:bg-[#81c784]/20 cursor-pointer' : 'bg-black/20 border-gray-700 text-gray-600 cursor-not-allowed'}`}
+                    className={`w-14 h-14 sm:w-18 sm:h-18 border-2 rounded-2xl text-lg sm:text-xl flex items-center justify-center select-none touch-none font-bold backdrop-blur-md shadow-lg ${coins >= 20 ? 'bg-black/60 border-amber-400 text-yellow-300 active:bg-yellow-400/30 cursor-pointer' : 'bg-black/40 border-amber-900/40 text-amber-700/50 cursor-not-allowed'}`}
                   >▲▲</button>
                 </div>
               </div>

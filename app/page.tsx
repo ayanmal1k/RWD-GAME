@@ -47,6 +47,8 @@ export default function Home() {
   const [historyLogs, setHistoryLogs] = useState<GameHistoryItem[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
+  const activeSessionRef = useRef<{ sessionId: string; token: string } | null>(null);
+
   // Save user to Firestore when they connect
   useEffect(() => {
     const saveUser = async () => {
@@ -132,23 +134,34 @@ export default function Home() {
           setHighScore(finalScore);
         }
 
-        // Save game history to Firestore
-        if (primaryWallet?.address) {
-          const saveRun = async () => {
+        // Verify and end run securely via Server Anti-Cheat API
+        if (activeSessionRef.current) {
+          const session = activeSessionRef.current;
+          activeSessionRef.current = null;
+
+          const verifyAndSave = async () => {
             try {
-              await addDoc(collection(db, 'game_history'), {
-                userAddress: primaryWallet.address,
-                score: finalScore,
-                coins: finalCoins,
-                durationSeconds: durationSeconds,
-                createdAt: serverTimestamp(),
+              const res = await fetch('/api/game/end', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                  sessionId: session.sessionId,
+                  token: session.token,
+                  score: finalScore,
+                  coins: finalCoins,
+                }),
               });
-              console.log("Game history saved to Firestore!");
+              const data = await res.json();
+              if (res.ok && data.success) {
+                console.log("Run verified & recorded by anti-cheat server!");
+              } else {
+                console.warn("Anti-cheat flag triggered:", data.error || data.details);
+              }
             } catch (e) {
-              console.error("Error saving game history:", e);
+              console.error("Failed to verify game session:", e);
             }
           };
-          saveRun();
+          verifyAndSave();
         }
       }
     });
@@ -186,7 +199,25 @@ export default function Home() {
     }
   }, [primaryWallet, gameState]);
 
-  const handleStartRestart = () => {
+  const handleStartRestart = async () => {
+    // Initiate secure game session on server
+    if (primaryWallet?.address) {
+      try {
+        const res = await fetch('/api/game/start', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userAddress: primaryWallet.address }),
+        });
+        const data = await res.json();
+        if (res.ok && data.sessionId) {
+          activeSessionRef.current = { sessionId: data.sessionId, token: data.token };
+          console.log("Anti-cheat session created:", data.sessionId);
+        }
+      } catch (err) {
+        console.error("Error creating anti-cheat session:", err);
+      }
+    }
+
     if (engineRef.current) {
       engineRef.current.startGame();
     }

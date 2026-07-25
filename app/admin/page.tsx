@@ -15,9 +15,15 @@ import {
   ExternalLink,
   Coins,
   Sparkles,
-  Users
+  Users,
+  Lock,
+  Key,
+  LogOut,
+  Eye,
+  EyeOff,
+  AlertCircle
 } from 'lucide-react';
-import { motion } from 'framer-motion';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface GlobalWithdrawal {
   id: string;
@@ -49,6 +55,14 @@ interface LeaderboardPreviewPlayer {
 export default function AdminPage() {
   const [activeTab, setActiveTab] = useState<'leaderboard' | 'withdrawals' | 'stats'>('leaderboard');
 
+  // Auth state
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [inputUser, setInputUser] = useState('');
+  const [inputPass, setInputPass] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
+
   // Leaderboard settings state
   const [isLeaderboardEnabled, setIsLeaderboardEnabled] = useState(true);
   const [startDate, setStartDate] = useState('');
@@ -70,6 +84,45 @@ export default function AdminPage() {
 
   // Raw game history entries for Leaderboard Preview
   const [rawGameHistory, setRawGameHistory] = useState<any[]>([]);
+
+  useEffect(() => {
+    const sessionAuth = sessionStorage.getItem('admin_authenticated');
+    if (sessionAuth === 'true') {
+      setIsAuthenticated(true);
+    }
+  }, []);
+
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setAuthError(null);
+    setIsAuthenticating(true);
+
+    try {
+      const res = await fetch('/api/admin/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username: inputUser, password: inputPass }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || 'Authentication failed');
+      }
+
+      sessionStorage.setItem('admin_authenticated', 'true');
+      setIsAuthenticated(true);
+    } catch (err: any) {
+      setAuthError(err.message || 'Invalid username or password');
+    } finally {
+      setIsAuthenticating(false);
+    }
+  };
+
+  const handleLogout = () => {
+    sessionStorage.removeItem('admin_authenticated');
+    setIsAuthenticated(false);
+    setInputPass('');
+  };
 
   // Fetch Admin Settings
   const fetchSettings = async () => {
@@ -243,14 +296,112 @@ export default function AdminPage() {
 
   const leaderboardPreview = computeLeaderboardPreview();
 
+  if (!isAuthenticated) {
+    return (
+      <main className="min-h-screen bg-[#0a0802] text-[#fef08a] antialiased flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.95 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="max-w-md w-full bg-[#120d04] border-2 border-yellow-500/30 rounded-3xl p-8 shadow-[0_0_50px_rgba(234,179,8,0.25)] space-y-6 relative overflow-hidden"
+        >
+          {/* Header Icon */}
+          <div className="text-center space-y-3">
+            <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 mx-auto shadow-inner">
+              <Lock className="w-8 h-8 text-yellow-400 animate-pulse" />
+            </div>
+            <h1 className="text-2xl font-extrabold font-press-start text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500">
+              RESTRICTED ACCESS
+            </h1>
+            <p className="text-xs font-mono text-amber-200/60">
+              Enter Administrator Credentials to access game control panel.
+            </p>
+          </div>
+
+          <form onSubmit={handleLogin} className="space-y-4">
+            {/* Username Input */}
+            <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-3.5 space-y-1">
+              <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Users className="w-3.5 h-3.5 text-yellow-400" /> USERNAME
+              </label>
+              <input
+                type="text"
+                value={inputUser}
+                onChange={(e) => setInputUser(e.target.value)}
+                placeholder="admin"
+                required
+                className="w-full bg-transparent font-mono text-sm font-bold text-yellow-200 focus:outline-none placeholder-yellow-500/30"
+              />
+            </div>
+
+            {/* Password Input */}
+            <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-3.5 space-y-1 relative">
+              <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+                <Key className="w-3.5 h-3.5 text-yellow-400" /> PASSWORD
+              </label>
+              <div className="flex items-center justify-between">
+                <input
+                  type={showPassword ? 'text' : 'password'}
+                  value={inputPass}
+                  onChange={(e) => setInputPass(e.target.value)}
+                  placeholder="••••••••••••••••"
+                  required
+                  className="w-full bg-transparent font-mono text-sm font-bold text-yellow-200 focus:outline-none placeholder-yellow-500/30 pr-8"
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword(!showPassword)}
+                  className="text-amber-400/60 hover:text-yellow-300 cursor-pointer"
+                >
+                  {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                </button>
+              </div>
+            </div>
+
+            {/* Auth Error Banner */}
+            <AnimatePresence>
+              {authError && (
+                <motion.div
+                  initial={{ opacity: 0, y: -5 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0 }}
+                  className="p-3 bg-red-500/10 border border-red-500/40 rounded-xl flex items-center gap-2 text-red-400 text-xs font-mono"
+                >
+                  <AlertCircle className="w-4 h-4 shrink-0" />
+                  <span>{authError}</span>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
+            {/* Submit Button */}
+            <button
+              type="submit"
+              disabled={isAuthenticating}
+              className="w-full py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs rounded-2xl shadow-[0_0_25px_rgba(234,179,8,0.4)] transition-all cursor-pointer disabled:opacity-50"
+            >
+              {isAuthenticating ? 'VERIFYING CREDENTIALS...' : 'UNLOCK ADMIN PANEL'}
+            </button>
+          </form>
+        </motion.div>
+      </main>
+    );
+  }
+
   return (
     <main className="min-h-screen bg-[#0a0802] text-[#fef08a] antialiased py-10 px-4 sm:px-6 lg:px-8">
       <div className="max-w-5xl mx-auto space-y-8">
 
         {/* Page Header */}
-        <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs font-mono font-bold tracking-widest uppercase">
-            <ShieldCheck className="w-4 h-4 text-yellow-400" /> ADMIN CONTROL CENTER
+        <div className="text-center space-y-3 relative">
+          <div className="flex items-center justify-between">
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs font-mono font-bold tracking-widest uppercase">
+              <ShieldCheck className="w-4 h-4 text-yellow-400" /> ADMIN CONTROL CENTER
+            </div>
+            <button
+              onClick={handleLogout}
+              className="px-4 py-1.5 bg-red-500/20 hover:bg-red-500/30 border border-red-500/40 text-red-300 rounded-xl font-mono text-xs font-bold flex items-center gap-1.5 transition-all cursor-pointer"
+            >
+              <LogOut className="w-3.5 h-3.5" /> LOGOUT ADMIN
+            </button>
           </div>
           <h1 className="text-3xl sm:text-5xl font-extrabold font-press-start text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
             ADMIN PANEL

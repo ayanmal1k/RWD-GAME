@@ -13,7 +13,6 @@ export function Navbar() {
   const navItems = [
     { label: 'PLAY', href: '/', icon: Gamepad2 },
     { label: 'WITHDRAW', href: '/withdraw', icon: ArrowDownToLine },
-    { label: 'ADMIN', href: '/admin', icon: ShieldCheck },
   ];
 
   return (

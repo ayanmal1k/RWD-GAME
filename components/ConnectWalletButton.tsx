@@ -2,12 +2,15 @@
 
 import { useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { motion } from 'framer-motion';
-import { Wallet, LogOut, Copy, Check } from 'lucide-react';
-import React, { useState } from 'react';
+import { Wallet, LogOut, Copy, Check, Coins } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { db } from '@/lib/firebase';
+import { doc, onSnapshot } from 'firebase/firestore';
 
 export function ConnectWalletButton() {
   const { primaryWallet, setShowAuthFlow, handleLogOut } = useDynamicContext();
   const [copied, setCopied] = useState(false);
+  const [bankCoins, setBankCoins] = useState<number>(0);
 
   const isConnected = !!primaryWallet;
   const address = primaryWallet?.address;
@@ -15,6 +18,29 @@ export function ConnectWalletButton() {
   const truncatedAddress = address
     ? `${address.slice(0, 4)}...${address.slice(-4)}`
     : '';
+
+  useEffect(() => {
+    if (!address) {
+      setBankCoins(0);
+      return;
+    }
+
+    const userRef = doc(db, 'users', address);
+    const unsubscribe = onSnapshot(
+      userRef,
+      (docSnap) => {
+        if (docSnap.exists()) {
+          const data = docSnap.data();
+          setBankCoins(data.totalCoins || 0);
+        }
+      },
+      (error) => {
+        console.warn('Coin bank snapshot warning:', error);
+      }
+    );
+
+    return () => unsubscribe();
+  }, [address]);
 
   const handleCopy = async () => {
     if (address) {
@@ -48,6 +74,21 @@ export function ConnectWalletButton() {
         </motion.button>
       ) : (
         <div className="flex items-center gap-2">
+          {/* Banked Coins Pill */}
+          <motion.div
+            key={bankCoins}
+            initial={{ scale: 1 }}
+            animate={{ scale: [1, 1.18, 1] }}
+            transition={{ duration: 0.3 }}
+            className="flex items-center gap-1.5 px-3 py-2 bg-gradient-to-r from-amber-500/20 via-yellow-500/15 to-amber-500/20 border border-yellow-500/40 rounded-full shadow-[0_0_12px_rgba(234,179,8,0.25)] backdrop-blur-md select-none"
+            title="Total Banked Coins"
+          >
+            <Coins className="w-4 h-4 text-yellow-400 drop-shadow-[0_0_6px_rgba(250,204,21,0.8)]" />
+            <span className="text-xs font-extrabold text-yellow-300 font-mono tracking-wider">
+              {bankCoins}
+            </span>
+          </motion.div>
+
           {/* Address pill */}
           <motion.button
             whileHover={{ scale: 1.03 }}

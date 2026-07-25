@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, updateDoc, addDoc, collection, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
 
 export async function POST(request: Request) {
   try {
@@ -86,6 +86,23 @@ export async function POST(request: Request) {
       verified: true,
       createdAt: serverTimestamp(),
     });
+
+    // Deposit verified coins into user bank in Firestore
+    if (coins > 0) {
+      const userRef = doc(db, 'users', session.userAddress);
+      try {
+        await updateDoc(userRef, {
+          totalCoins: increment(coins),
+          updatedAt: serverTimestamp(),
+        });
+      } catch (err) {
+        await setDoc(userRef, {
+          address: session.userAddress,
+          totalCoins: coins,
+          createdAt: serverTimestamp(),
+        }, { merge: true });
+      }
+    }
 
     return NextResponse.json({
       success: true,

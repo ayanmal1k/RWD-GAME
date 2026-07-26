@@ -179,10 +179,10 @@ export default function WithdrawPage() {
                 <span className="font-bold text-yellow-300 select-all font-mono">
                   {process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS}
                 </span>
-                <a 
-                  href={`https://solscan.io/token/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS}`} 
-                  target="_blank" 
-                  rel="noopener noreferrer" 
+                <a
+                  href={`https://solscan.io/token/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
                   className="text-amber-400 hover:text-yellow-200 ml-1 inline-flex items-center"
                   title="View on Solscan"
                 >
@@ -246,13 +246,12 @@ export default function WithdrawPage() {
 
           {/* $REAL Token Gate Requirement Notice */}
           {address && (
-            <div className={`p-4 rounded-2xl border text-xs font-mono flex items-center justify-between gap-3 ${
-              isCheckingBalance
+            <div className={`p-4 rounded-2xl border text-xs font-mono flex items-center justify-between gap-3 ${isCheckingBalance
                 ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-300 animate-pulse'
                 : isEligible
-                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                : 'bg-red-500/15 border-red-500/40 text-red-300'
-            }`}>
+                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                  : 'bg-red-500/15 border-red-500/40 text-red-300'
+              }`}>
               <div className="flex items-center gap-3">
                 <img src="/logo.jpeg" alt="$REAL" className="w-8 h-8 rounded-full border border-amber-400/40 object-cover shrink-0" />
                 <div className="flex flex-col gap-0.5">
@@ -264,9 +263,8 @@ export default function WithdrawPage() {
                   </span>
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase shrink-0 font-mono ${
-                isEligible ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
-              }`}>
+              <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase shrink-0 font-mono ${isEligible ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
+                }`}>
                 {isCheckingBalance ? 'VERIFYING' : isEligible ? 'WITHDRAWAL UNLOCKED' : 'WITHDRAWAL LOCKED'}
               </span>
             </div>
@@ -361,26 +359,25 @@ export default function WithdrawPage() {
             <button
               type="submit"
               disabled={isSubmitting || coinsNum < 1000 || coinsNum > bankCoins || !address || !isEligible || isCheckingBalance}
-              className={`w-full py-4 font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${
-                !address
+              className={`w-full py-4 font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${!address
                   ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] cursor-pointer'
                   : isCheckingBalance
-                  ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 cursor-wait animate-pulse'
-                  : isEligible
-                  ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] cursor-pointer'
-                  : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
-              }`}
+                    ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 cursor-wait animate-pulse'
+                    : isEligible
+                      ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] cursor-pointer'
+                      : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                }`}
             >
               {address && !isEligible && !isCheckingBalance && <Lock className="w-4 h-4 text-red-400 shrink-0" />}
               {isSubmitting
                 ? 'PROCESSING TREASURY TRANSACTION...'
                 : !address
-                ? 'CONNECT WALLET TO WITHDRAW'
-                : isCheckingBalance
-                ? 'VERIFYING $REAL BALANCE...'
-                : isEligible
-                ? 'EXCHANGE & WITHDRAW NOW'
-                : 'LOCKED (NEED 1,000,000 $REAL)'}
+                  ? 'CONNECT WALLET TO WITHDRAW'
+                  : isCheckingBalance
+                    ? 'VERIFYING $REAL BALANCE...'
+                    : isEligible
+                      ? 'EXCHANGE & WITHDRAW NOW'
+                      : 'LOCKED (NEED 1,000,000 $REAL)'}
             </button>
           </form>
         </div>

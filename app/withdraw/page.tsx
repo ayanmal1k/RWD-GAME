@@ -14,7 +14,8 @@ import {
   Clock,
   Sparkles,
   Wallet,
-  Lock
+  Lock,
+  ShoppingCart
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CoinIcon } from '@/components/CoinIcon';
@@ -246,27 +247,43 @@ export default function WithdrawPage() {
 
           {/* $REAL Token Gate Requirement Notice */}
           {address && (
-            <div className={`p-4 rounded-2xl border text-xs font-mono flex items-center justify-between gap-3 ${isCheckingBalance
-                ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-300 animate-pulse'
-                : isEligible
-                  ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
-                  : 'bg-red-500/15 border-red-500/40 text-red-300'
-              }`}>
-              <div className="flex items-center gap-3">
-                <img src="/logo.jpeg" alt="$REAL" className="w-8 h-8 rounded-full border border-amber-400/40 object-cover shrink-0" />
-                <div className="flex flex-col gap-0.5">
-                  <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                    $REAL TOKEN HOLDINGS REQUIREMENT
-                  </span>
-                  <span className="text-white text-xs">
-                    Current Balance: <strong className="text-yellow-300">{isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} $REAL`}</strong> (Min Required: 1,000,000 $REAL)
+            <div className="space-y-3">
+              <div className={`p-4 rounded-2xl border text-xs font-mono flex items-center justify-between gap-3 ${isCheckingBalance
+                  ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-300 animate-pulse'
+                  : isEligible
+                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                    : 'bg-red-500/15 border-red-500/40 text-red-300'
+                }`}>
+                <div className="flex items-center gap-3">
+                  <img src="/logo.jpeg" alt="$REAL" className="w-8 h-8 rounded-full border border-amber-400/40 object-cover shrink-0" />
+                  <div className="flex flex-col gap-0.5">
+                    <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                      $REAL TOKEN HOLDINGS REQUIREMENT
+                    </span>
+                    <span className="text-white text-xs">
+                      Current Balance: <strong className="text-yellow-300">{isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} $REAL`}</strong> (Min Required: 1,000,000 $REAL)
+                    </span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  {!isEligible && !isCheckingBalance && (
+                    <a
+                      href={`https://pump.fun/coin/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS || 'EVNWDT4QtZv4tBGMaFpygGq8bxEEcZMUZxMmhtaspump'}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-3.5 py-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-press-start text-[9px] font-extrabold rounded-xl border border-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] flex items-center gap-1.5 transition-all transform hover:scale-105 active:scale-95"
+                    >
+                      <ShoppingCart className="w-3.5 h-3.5 text-[#0a0802]" />
+                      <span>BUY $REAL ON PUMP.FUN</span>
+                      <ExternalLink className="w-3 h-3 text-[#0a0802]" />
+                    </a>
+                  )}
+                  <span className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase shrink-0 font-mono ${isEligible ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
+                    }`}>
+                    {isCheckingBalance ? 'VERIFYING' : isEligible ? 'WITHDRAWAL UNLOCKED' : 'LOCKED'}
                   </span>
                 </div>
               </div>
-              <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase shrink-0 font-mono ${isEligible ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
-                }`}>
-                {isCheckingBalance ? 'VERIFYING' : isEligible ? 'WITHDRAWAL UNLOCKED' : 'WITHDRAWAL LOCKED'}
-              </span>
             </div>
           )}
 

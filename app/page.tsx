@@ -19,7 +19,9 @@ import {
   Coins,
   X,
   Lock,
-  ShieldAlert
+  ShieldAlert,
+  ExternalLink,
+  ShoppingCart
 } from 'lucide-react';
 
 interface GameHistoryItem {
@@ -94,7 +96,7 @@ export default function Home() {
         try {
           const userRef = doc(db, 'users', address);
           const userSnap = await getDoc(userRef);
-          
+
           if (!userSnap.exists()) {
             await setDoc(userRef, {
               address: address,
@@ -332,114 +334,129 @@ export default function Home() {
 
             {/* START OVERLAY */}
             {gameState === 'START' && (
-              <div className="absolute inset-0 bg-[#0a0802] flex flex-col items-center justify-center p-3 sm:p-6 text-center text-white z-40 overflow-y-auto custom-scrollbar">
-                 <h1 className="text-2xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-amber-400 to-yellow-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] mb-4 sm:mb-8 shrink-0">
-                   $REAL CLIMBER
-                 </h1>
+              <div
+                className="absolute inset-0 bg-[#0a0802] flex flex-col items-center justify-center p-3 sm:p-6 text-center text-white z-40 overflow-y-auto [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                <h1 className="text-2xl sm:text-4xl font-extrabold tracking-wider font-press-start text-transparent bg-clip-text bg-gradient-to-b from-yellow-300 via-amber-400 to-yellow-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.9)] mb-4 sm:mb-8 shrink-0">
+                  $REAL CLIMBER
+                </h1>
 
-                 <div className="relative w-20 h-20 sm:w-36 sm:h-36 mb-3 sm:mb-6 shrink-0">
-                   <img 
-                     src="/idle.png" 
-                     alt="Character Idle" 
-                     className="w-full h-full object-contain pixelated animate-breathe drop-shadow-[0_0_15px_rgba(250,204,21,0.3)]"
-                   />
-                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 sm:w-16 h-2 sm:h-3 bg-black/60 rounded-[50%] blur-sm animate-shadow-breathe"></div>
-                 </div>
+                <div className="relative w-20 h-20 sm:w-36 sm:h-36 mb-3 sm:mb-6 shrink-0">
+                  <img
+                    src="/idle.png"
+                    alt="Character Idle"
+                    className="w-full h-full object-contain pixelated animate-breathe drop-shadow-[0_0_15px_rgba(250,204,21,0.3)]"
+                  />
+                  <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 sm:w-16 h-2 sm:h-3 bg-black/60 rounded-[50%] blur-sm animate-shadow-breathe"></div>
+                </div>
 
-                 {/* $REAL TOKEN BALANCE GATE CARD */}
-                 {primaryWallet && (
-                   <div className={`mb-4 w-full max-w-sm p-3 rounded-2xl border text-xs font-mono text-left flex items-center justify-between gap-2 shrink-0 backdrop-blur-md ${
-                     isCheckingBalance
-                       ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-300 animate-pulse'
-                       : isEligible
-                       ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
-                       : 'bg-red-500/15 border-red-500/40 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
-                   }`}>
-                     <div className="flex items-center gap-2">
-                       <img src="/logo.jpeg" alt="$REAL" className="w-6 h-6 rounded-full border border-amber-400/40 shrink-0 object-cover" />
-                       <div className="flex flex-col">
-                         <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
-                           $REAL HOLDINGS GATE
-                         </span>
-                         <span className="font-bold text-white text-[11px]">
-                           {isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} / 1,000,000 $REAL`}
-                         </span>
-                       </div>
-                     </div>
-                     <span className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-lg font-bold font-mono uppercase shrink-0 ${
-                       isEligible ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
-                     }`}>
-                       {isCheckingBalance ? 'VERIFYING' : isEligible ? 'UNLOCKED' : 'LOCKED'}
-                     </span>
-                   </div>
-                 )}
+                {/* $REAL TOKEN BALANCE GATE CARD */}
+                {primaryWallet && (
+                  <div className="mb-3 w-full max-w-sm space-y-2 shrink-0">
+                    <div className={`w-full p-3 rounded-2xl border text-xs font-mono text-left flex items-center justify-between gap-2 backdrop-blur-md ${isCheckingBalance
+                        ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-300 animate-pulse'
+                        : isEligible
+                          ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                          : 'bg-red-500/15 border-red-500/40 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                      }`}>
+                      <div className="flex items-center gap-2">
+                        <img src="/logo.jpeg" alt="$REAL" className="w-6 h-6 rounded-full border border-amber-400/40 shrink-0 object-cover" />
+                        <div className="flex flex-col">
+                          <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                            $REAL HOLDINGS GATE
+                          </span>
+                          <span className="font-bold text-white text-[11px]">
+                            {isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} / 1,000,000 $REAL`}
+                          </span>
+                        </div>
+                      </div>
+                      <span className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-lg font-bold font-mono uppercase shrink-0 ${isEligible ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
+                        }`}>
+                        {isCheckingBalance ? 'VERIFYING' : isEligible ? 'UNLOCKED' : 'LOCKED'}
+                      </span>
+                    </div>
 
-                 <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full max-w-sm justify-center shrink-0">
-                   <button 
-                     onClick={handlePlayClick}
-                     disabled={!!primaryWallet && (!isEligible || isCheckingBalance)}
-                     className={`w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 sm:border-4 transition-all flex items-center justify-center gap-2 ${
-                       !primaryWallet
-                         ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.5)] hover:shadow-[0_0_35px_rgba(234,179,8,0.8)] cursor-pointer transform hover:scale-105 active:scale-95'
-                         : isCheckingBalance
-                         ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 cursor-wait animate-pulse'
-                         : isEligible
-                         ? 'bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-[#0a0802] border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:shadow-[0_0_35px_rgba(16,185,129,0.8)] cursor-pointer transform hover:scale-105 active:scale-95'
-                         : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
-                     }`}
-                   >
-                     {!!primaryWallet && !isEligible && !isCheckingBalance && <Lock className="w-4 h-4 text-red-400 shrink-0" />}
-                     {!primaryWallet
-                       ? 'CONNECT TO PLAY'
-                       : isCheckingBalance
-                       ? 'CHECKING $REAL...'
-                       : isEligible
-                       ? 'PLAY NOW'
-                       : 'NEED 1M $REAL TO PLAY'}
-                   </button>
-                   <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
-                     <button 
-                       onClick={handleOpenHistory}
-                       className="px-3 py-2.5 sm:px-5 sm:py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-[10px] sm:text-xs rounded-2xl border border-yellow-500/40 flex items-center justify-center gap-1.5 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
-                     >
-                       <History className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
-                       HISTORY
-                     </button>
-                     <button 
-                       onClick={handleOpenLeaderboard}
-                       className="px-3 py-2.5 sm:px-5 sm:py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-[10px] sm:text-xs rounded-2xl border border-yellow-500/40 flex items-center justify-center gap-1.5 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
-                     >
-                       <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400" />
-                       RANKINGS
-                     </button>
-                   </div>
-                 </div>
+                    {!isEligible && !isCheckingBalance && (
+                      <a
+                        href={`https://pump.fun/coin/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS || 'EVNWDT4QtZv4tBGMaFpygGq8bxEEcZMUZxMmhtaspump'}`}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="w-full py-3 px-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-press-start text-[9px] sm:text-[10px] font-extrabold rounded-2xl border-2 border-yellow-300 shadow-[0_0_20px_rgba(250,204,21,0.5)] hover:shadow-[0_0_30px_rgba(250,204,21,0.8)] flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer tracking-wider"
+                      >
+                        <ShoppingCart className="w-4 h-4 text-[#0a0802] shrink-0" />
+                        <span>BUY $REAL ON PUMP.FUN</span>
+                        <ExternalLink className="w-3.5 h-3.5 text-[#0a0802] shrink-0" />
+                      </a>
+                    )}
+                  </div>
+                )}
 
-                 {/* EMBEDDED LEADERBOARD PREVIEW (BELOW BUTTONS) */}
-                 {leaderboardData && leaderboardData.enabled && (
-                   <div className="mt-4 sm:mt-6 w-full max-w-sm bg-[#171206]/90 border border-yellow-500/30 rounded-2xl p-2.5 sm:p-3 shadow-lg text-left space-y-1.5 shrink-0">
-                     <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-press-start text-yellow-400 pb-1 border-b border-yellow-500/15">
-                       <span className="flex items-center gap-1.5"><Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-400" /> TOP CLIMBERS</span>
-                       {leaderboardData.startDate && leaderboardData.endDate && (
-                         <span className="text-[7px] sm:text-[8px] font-mono text-amber-400/70">{leaderboardData.startDate} - {leaderboardData.endDate}</span>
-                       )}
-                     </div>
-                     <div className="space-y-1">
-                       {leaderboardData.topPlayers.slice(0, 3).map((player) => (
-                         <div key={player.rank} className="flex items-center justify-between text-[9px] sm:text-[10px] font-mono bg-black/40 px-2 py-1 rounded-lg border border-yellow-500/10">
-                           <span className="font-bold text-amber-300 truncate max-w-[140px] sm:max-w-[180px]">
-                             #{player.rank} {player.userAddress.slice(0, 4)}...{player.userAddress.slice(-4)}
-                           </span>
-                           <span className="font-press-start text-[8px] sm:text-[9px] text-yellow-400">{player.score} PTS</span>
-                         </div>
-                       ))}
-                     </div>
-                   </div>
-                 )}
+                <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full max-w-sm justify-center shrink-0">
+                  <button
+                    onClick={handlePlayClick}
+                    disabled={!!primaryWallet && (!isEligible || isCheckingBalance)}
+                    className={`w-full sm:w-auto px-5 py-3 sm:px-6 sm:py-3.5 font-bold font-press-start text-[9px] sm:text-[10px] rounded-2xl border-2 sm:border-4 transition-all flex items-center justify-center gap-1.5 leading-tight ${!primaryWallet
+                        ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.5)] hover:shadow-[0_0_35px_rgba(234,179,8,0.8)] cursor-pointer transform hover:scale-105 active:scale-95'
+                        : isCheckingBalance
+                          ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 cursor-wait animate-pulse'
+                          : isEligible
+                            ? 'bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-[#0a0802] border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:shadow-[0_0_35px_rgba(16,185,129,0.8)] cursor-pointer transform hover:scale-105 active:scale-95'
+                            : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                      }`}
+                  >
+                    {!!primaryWallet && !isEligible && !isCheckingBalance && <Lock className="w-3.5 h-3.5 text-red-400 shrink-0" />}
+                    {!primaryWallet
+                      ? 'CONNECT TO PLAY'
+                      : isCheckingBalance
+                        ? 'CHECKING $REAL...'
+                        : isEligible
+                          ? 'PLAY NOW'
+                          : 'NEED 1M $REAL TO PLAY'}
+                  </button>
+                  <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
+                    <button
+                      onClick={handleOpenHistory}
+                      className="px-3 py-2.5 sm:px-5 sm:py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-[10px] sm:text-xs rounded-2xl border border-yellow-500/40 flex items-center justify-center gap-1.5 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <History className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-amber-400" />
+                      HISTORY
+                    </button>
+                    <button
+                      onClick={handleOpenLeaderboard}
+                      className="px-3 py-2.5 sm:px-5 sm:py-4 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-[10px] sm:text-xs rounded-2xl border border-yellow-500/40 flex items-center justify-center gap-1.5 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                    >
+                      <Trophy className="w-3.5 h-3.5 sm:w-4 sm:h-4 text-yellow-400" />
+                      RANKINGS
+                    </button>
+                  </div>
+                </div>
 
-                 {isMobile && !isFullscreen && (
-                   <p className="mt-2 text-[8px] sm:text-[9px] font-mono text-amber-400/70 shrink-0">Tap PLAY to enter game view.</p>
-                 )}
+                {/* EMBEDDED LEADERBOARD PREVIEW (BELOW BUTTONS) */}
+                {leaderboardData && leaderboardData.enabled && (
+                  <div className="mt-4 sm:mt-6 w-full max-w-sm bg-[#171206]/90 border border-yellow-500/30 rounded-2xl p-2.5 sm:p-3 shadow-lg text-left space-y-1.5 shrink-0">
+                    <div className="flex items-center justify-between text-[9px] sm:text-[10px] font-press-start text-yellow-400 pb-1 border-b border-yellow-500/15">
+                      <span className="flex items-center gap-1.5"><Trophy className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-yellow-400" /> TOP CLIMBERS</span>
+                      {leaderboardData.startDate && leaderboardData.endDate && (
+                        <span className="text-[7px] sm:text-[8px] font-mono text-amber-400/70">{leaderboardData.startDate} - {leaderboardData.endDate}</span>
+                      )}
+                    </div>
+                    <div className="space-y-1">
+                      {leaderboardData.topPlayers.slice(0, 3).map((player) => (
+                        <div key={player.rank} className="flex items-center justify-between text-[9px] sm:text-[10px] font-mono bg-black/40 px-2 py-1 rounded-lg border border-yellow-500/10">
+                          <span className="font-bold text-amber-300 truncate max-w-[140px] sm:max-w-[180px]">
+                            #{player.rank} {player.userAddress.slice(0, 4)}...{player.userAddress.slice(-4)}
+                          </span>
+                          <span className="font-press-start text-[8px] sm:text-[9px] text-yellow-400">{player.score} PTS</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {isMobile && !isFullscreen && (
+                  <p className="mt-2 text-[8px] sm:text-[9px] font-mono text-amber-400/70 shrink-0">Tap PLAY to enter game view.</p>
+                )}
               </div>
             )}
 
@@ -474,7 +491,7 @@ export default function Home() {
                       <History className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
                       <h3 className="text-[10px] sm:text-xs font-bold font-press-start text-yellow-300">RECENT GAME LOGS</h3>
                     </div>
-                    <button 
+                    <button
                       onClick={() => setShowHistoryModal(false)}
                       className="p-1.5 sm:p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-amber-400"
                     >
@@ -494,7 +511,7 @@ export default function Home() {
                     ) : (
                       <div className="flex flex-col gap-2">
                         {historyLogs.map((item, idx) => (
-                          <div 
+                          <div
                             key={item.id || idx}
                             className="bg-[#171206]/80 border border-yellow-500/20 rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-xs font-mono"
                           >
@@ -529,7 +546,7 @@ export default function Home() {
                       <Trophy className="w-4 h-4 sm:w-5 sm:h-5 text-yellow-400" />
                       <h3 className="text-[10px] sm:text-xs font-bold font-press-start text-yellow-300">CLIMBER LEADERBOARD</h3>
                     </div>
-                    <button 
+                    <button
                       onClick={() => setShowLeaderboardModal(false)}
                       className="p-1.5 sm:p-2 hover:bg-white/10 rounded-full transition-colors cursor-pointer text-amber-400"
                     >
@@ -559,18 +576,16 @@ export default function Home() {
                           </div>
                         )}
                         {leaderboardData.topPlayers.map((player) => (
-                          <div 
+                          <div
                             key={player.rank}
-                            className={`border rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-[11px] sm:text-xs font-mono transition-all ${
-                              player.rank === 1
+                            className={`border rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-[11px] sm:text-xs font-mono transition-all ${player.rank === 1
                                 ? 'bg-gradient-to-r from-amber-500/20 to-yellow-500/10 border-yellow-400 shadow-[0_0_15px_rgba(234,179,8,0.2)]'
                                 : 'bg-[#171206]/80 border-yellow-500/20'
-                            }`}
+                              }`}
                           >
                             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
-                              <span className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 rounded-lg flex items-center justify-center font-press-start text-[9px] sm:text-[10px] font-bold ${
-                                player.rank === 1 ? 'bg-yellow-400 text-black' : player.rank === 2 ? 'bg-amber-300/80 text-black' : player.rank === 3 ? 'bg-amber-600/80 text-white' : 'bg-black/40 text-amber-400/70'
-                              }`}>
+                              <span className={`w-5 h-5 sm:w-6 sm:h-6 shrink-0 rounded-lg flex items-center justify-center font-press-start text-[9px] sm:text-[10px] font-bold ${player.rank === 1 ? 'bg-yellow-400 text-black' : player.rank === 2 ? 'bg-amber-300/80 text-black' : player.rank === 3 ? 'bg-amber-600/80 text-white' : 'bg-black/40 text-amber-400/70'
+                                }`}>
                                 #{player.rank}
                               </span>
                               <div className="flex flex-col min-w-0">
@@ -648,7 +663,7 @@ export default function Home() {
       {!isFullscreen && (
         <div className="flex flex-col items-center px-4 sm:px-8 pb-8">
           <div className="w-full max-w-xl flex flex-col items-center gap-4 z-10">
-            
+
             {/* Game Controls Card */}
             <section className="w-full bg-[#171206]/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-yellow-500/30 flex flex-col gap-3 font-mono text-yellow-200/80 text-xs">
               <div className="flex items-center justify-between border-b border-yellow-500/20 pb-2.5">

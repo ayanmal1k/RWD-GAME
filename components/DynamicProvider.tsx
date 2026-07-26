@@ -4,12 +4,18 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { DynamicContextProvider, useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { SolanaWalletConnectors } from '@dynamic-labs/solana';
 
+import { useRealTokenBalance } from '@/hooks/useRealTokenBalance';
+
 interface WalletContextType {
   primaryWallet: { address: string } | null;
   setShowAuthFlow: (show: boolean) => void;
   handleLogOut: () => Promise<void>;
   connectNativeSolana: () => Promise<void>;
   walletError: string | null;
+  realBalance: number | null;
+  isCheckingBalance: boolean;
+  isEligible: boolean;
+  refetchBalance: () => Promise<void>;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -18,6 +24,10 @@ const WalletContext = createContext<WalletContextType>({
   handleLogOut: async () => {},
   connectNativeSolana: async () => {},
   walletError: null,
+  realBalance: null,
+  isCheckingBalance: false,
+  isEligible: false,
+  refetchBalance: async () => {},
 });
 
 function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
@@ -63,6 +73,12 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
       }
     }
   }, []);
+
+  const activeAddress = dynamicWalletAddress || nativeAddress;
+  const primaryWallet = activeAddress ? { address: activeAddress } : null;
+
+  // Track $REAL Token balance using custom hook
+  const { realBalance, isCheckingBalance, isEligible, refetchBalance } = useRealTokenBalance(activeAddress);
 
   const connectNativeSolana = async () => {
     setWalletError(null);
@@ -116,9 +132,6 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const activeAddress = dynamicWalletAddress || nativeAddress;
-  const primaryWallet = activeAddress ? { address: activeAddress } : null;
-
   const setShowAuthFlow = (show: boolean) => {
     if (show) {
       connectNativeSolana();
@@ -133,6 +146,10 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
         handleLogOut,
         connectNativeSolana,
         walletError,
+        realBalance,
+        isCheckingBalance,
+        isEligible,
+        refetchBalance,
       }}
     >
       {children}

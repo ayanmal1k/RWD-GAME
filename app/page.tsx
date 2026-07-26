@@ -17,7 +17,9 @@ import {
   History,
   Clock,
   Coins,
-  X
+  X,
+  Lock,
+  ShieldAlert
 } from 'lucide-react';
 
 interface GameHistoryItem {
@@ -33,7 +35,7 @@ export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
 
-  const { primaryWallet, setShowAuthFlow } = useAppWallet();
+  const { primaryWallet, setShowAuthFlow, realBalance, isCheckingBalance, isEligible } = useAppWallet();
 
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'PAUSED' | 'GAME_OVER'>('START');
   const [score, setScore] = useState(0);
@@ -216,25 +218,33 @@ export default function Home() {
   }, [isMuted]);
 
   const handlePlayClick = () => {
+    if (!primaryWallet) {
+      setShowAuthFlow(true);
+      return;
+    }
+    if (isCheckingBalance) return;
+    if (!isEligible) return;
+
     if (isMobile && !isFullscreen) {
       setIsFullscreen(true);
     }
-    if (!primaryWallet) {
-      setShowAuthFlow(true);
-    } else {
-      handleStartRestart();
-    }
+    handleStartRestart();
   };
 
   useEffect(() => {
-    if (!primaryWallet && gameState !== 'START') {
+    if ((!primaryWallet || (!isCheckingBalance && !isEligible)) && gameState !== 'START') {
       if (engineRef.current) {
         engineRef.current.forceStop();
       }
     }
-  }, [primaryWallet, gameState]);
+  }, [primaryWallet, isEligible, isCheckingBalance, gameState]);
 
   const handleStartRestart = async () => {
+    if (primaryWallet && !isEligible) {
+      console.warn("Blocked game start: Wallet holds less than 1,000,000 $REAL tokens");
+      return;
+    }
+
     // Initiate secure game session on server
     if (primaryWallet?.address) {
       try {
@@ -247,6 +257,9 @@ export default function Home() {
         if (res.ok && data.sessionId) {
           activeSessionRef.current = { sessionId: data.sessionId, token: data.token };
           console.log("Anti-cheat session created:", data.sessionId);
+        } else if (!res.ok && data.error) {
+          console.warn("Session start denied by server:", data.error);
+          return;
         }
       } catch (err) {
         console.error("Error creating anti-cheat session:", err);
@@ -324,7 +337,7 @@ export default function Home() {
                    $REAL CLIMBER
                  </h1>
 
-                 <div className="relative w-20 h-20 sm:w-40 sm:h-40 mb-4 sm:mb-8 shrink-0">
+                 <div className="relative w-20 h-20 sm:w-36 sm:h-36 mb-3 sm:mb-6 shrink-0">
                    <img 
                      src="/idle.png" 
                      alt="Character Idle" 
@@ -333,12 +346,56 @@ export default function Home() {
                    <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 sm:w-16 h-2 sm:h-3 bg-black/60 rounded-[50%] blur-sm animate-shadow-breathe"></div>
                  </div>
 
+                 {/* $REAL TOKEN BALANCE GATE CARD */}
+                 {primaryWallet && (
+                   <div className={`mb-4 w-full max-w-sm p-3 rounded-2xl border text-xs font-mono text-left flex items-center justify-between gap-2 shrink-0 backdrop-blur-md ${
+                     isCheckingBalance
+                       ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-300 animate-pulse'
+                       : isEligible
+                       ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_15px_rgba(16,185,129,0.15)]'
+                       : 'bg-red-500/15 border-red-500/40 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                   }`}>
+                     <div className="flex items-center gap-2">
+                       <img src="/logo.jpeg" alt="$REAL" className="w-6 h-6 rounded-full border border-amber-400/40 shrink-0 object-cover" />
+                       <div className="flex flex-col">
+                         <span className="text-[9px] font-bold uppercase tracking-wider text-amber-400/90 flex items-center gap-1">
+                           $REAL HOLDINGS GATE
+                         </span>
+                         <span className="font-bold text-white text-[11px]">
+                           {isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} / 1,000,000 $REAL`}
+                         </span>
+                       </div>
+                     </div>
+                     <span className={`text-[8px] sm:text-[9px] px-2 py-0.5 rounded-lg font-bold font-mono uppercase shrink-0 ${
+                       isEligible ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
+                     }`}>
+                       {isCheckingBalance ? 'VERIFYING' : isEligible ? 'UNLOCKED' : 'LOCKED'}
+                     </span>
+                   </div>
+                 )}
+
                  <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full max-w-sm justify-center shrink-0">
                    <button 
                      onClick={handlePlayClick}
-                     className="w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 sm:border-4 border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.5)] hover:shadow-[0_0_35px_rgba(234,179,8,0.8)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                     disabled={!!primaryWallet && (!isEligible || isCheckingBalance)}
+                     className={`w-full sm:w-auto px-6 py-3 sm:px-8 sm:py-4 font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 sm:border-4 transition-all flex items-center justify-center gap-2 ${
+                       !primaryWallet
+                         ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.5)] hover:shadow-[0_0_35px_rgba(234,179,8,0.8)] cursor-pointer transform hover:scale-105 active:scale-95'
+                         : isCheckingBalance
+                         ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 cursor-wait animate-pulse'
+                         : isEligible
+                         ? 'bg-gradient-to-r from-emerald-500 via-green-400 to-emerald-500 text-[#0a0802] border-emerald-300 shadow-[0_0_25px_rgba(16,185,129,0.5)] hover:shadow-[0_0_35px_rgba(16,185,129,0.8)] cursor-pointer transform hover:scale-105 active:scale-95'
+                         : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                     }`}
                    >
-                     {primaryWallet ? "PLAY NOW" : "CONNECT TO PLAY"}
+                     {!!primaryWallet && !isEligible && !isCheckingBalance && <Lock className="w-4 h-4 text-red-400 shrink-0" />}
+                     {!primaryWallet
+                       ? 'CONNECT TO PLAY'
+                       : isCheckingBalance
+                       ? 'CHECKING $REAL...'
+                       : isEligible
+                       ? 'PLAY NOW'
+                       : 'NEED 1M $REAL TO PLAY'}
                    </button>
                    <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
                      <button 

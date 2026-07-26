@@ -13,6 +13,8 @@ import {
   TOKEN_2022_PROGRAM_ID
 } from '@solana/spl-token';
 
+import { fetchRealTokenBalance, MIN_REAL_REQUIRED } from '@/lib/solana';
+
 const TOKEN_MINT_ADDRESS = process.env.REAL_TOKEN_MINT_ADDRESS || process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS || 'BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv';
 
 export async function POST(request: Request) {
@@ -22,6 +24,17 @@ export async function POST(request: Request) {
 
     if (!userAddress || typeof userAddress !== 'string') {
       return NextResponse.json({ error: 'Valid userAddress is required' }, { status: 400 });
+    }
+
+    // Verify $REAL token balance on-chain
+    const realBalance = await fetchRealTokenBalance(userAddress);
+    if (realBalance < MIN_REAL_REQUIRED) {
+      return NextResponse.json(
+        {
+          error: `Access Denied: You must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $REAL tokens in your wallet to withdraw. Current holdings: ${realBalance.toLocaleString()} $REAL.`
+        },
+        { status: 403 }
+      );
     }
 
     const coinsToExchange = Number(amountCoins);

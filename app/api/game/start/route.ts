@@ -3,6 +3,8 @@ import { db } from '@/lib/firebase';
 import { doc, setDoc, serverTimestamp } from 'firebase/firestore';
 import crypto from 'crypto';
 
+import { fetchRealTokenBalance, MIN_REAL_REQUIRED } from '@/lib/solana';
+
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
@@ -10,6 +12,17 @@ export async function POST(request: Request) {
 
     if (!userAddress || typeof userAddress !== 'string') {
       return NextResponse.json({ error: 'Valid userAddress is required' }, { status: 400 });
+    }
+
+    // Verify $REAL token balance on-chain
+    const realBalance = await fetchRealTokenBalance(userAddress);
+    if (realBalance < MIN_REAL_REQUIRED) {
+      return NextResponse.json(
+        {
+          error: `Access Denied: Wallet must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $REAL tokens to play. Current holdings: ${realBalance.toLocaleString()} $REAL.`
+        },
+        { status: 403 }
+      );
     }
 
     const sessionId = crypto.randomUUID();

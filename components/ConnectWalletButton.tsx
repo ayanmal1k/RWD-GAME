@@ -9,7 +9,7 @@ import { doc, onSnapshot } from 'firebase/firestore';
 import { CoinIcon } from './CoinIcon';
 
 export function ConnectWalletButton() {
-  const { primaryWallet, setShowAuthFlow, handleLogOut, connectNativeSolana, walletError } = useAppWallet();
+  const { primaryWallet, setShowAuthFlow, handleLogOut, realBalance, isCheckingBalance, isEligible } = useAppWallet();
   const [copied, setCopied] = useState(false);
   const [bankCoins, setBankCoins] = useState<number>(0);
 
@@ -74,7 +74,35 @@ export function ConnectWalletButton() {
           </span>
         </motion.button>
       ) : (
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end">
+          {/* $REAL Token Balance Pill */}
+          <div
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-xs font-mono backdrop-blur-md ${
+              isCheckingBalance
+                ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-300 animate-pulse'
+                : isEligible
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.2)]'
+                : 'bg-red-500/15 border-red-500/40 text-red-300 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
+            }`}
+            title={
+              isEligible
+                ? `Holdings: ${realBalance?.toLocaleString()} $REAL (Eligible to Play & Withdraw)`
+                : `Holdings: ${realBalance !== null ? realBalance.toLocaleString() : 0} / 1,000,000 $REAL (Minimum 1M required)`
+            }
+          >
+            <img src="/logo.jpeg" alt="$REAL" className="w-4 h-4 rounded-full border border-amber-400/40 object-cover" />
+            <span className="font-bold">
+              {isCheckingBalance
+                ? 'Checking...'
+                : `${(realBalance ?? 0).toLocaleString()} $REAL`}
+            </span>
+            {!isCheckingBalance && (
+              <span className={`text-[9px] px-1.5 py-0.2 rounded font-bold uppercase ${isEligible ? 'bg-emerald-500/30 text-emerald-200' : 'bg-red-500/30 text-red-200'}`}>
+                {isEligible ? 'UNLOCKED' : 'LOCKED'}
+              </span>
+            )}
+          </div>
+
           {/* Banked Coins Pill */}
           <motion.div
             key={bankCoins}
@@ -97,7 +125,7 @@ export function ConnectWalletButton() {
             onClick={handleCopy}
             className="flex items-center gap-2 px-3.5 py-1.5 bg-[#171206]/90 border border-yellow-500/30 rounded-full transition-all duration-300 hover:border-yellow-400/60 cursor-pointer backdrop-blur-md"
           >
-            <div className="w-2 h-2 rounded-full bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)] animate-pulse" />
+            <div className={`w-2 h-2 rounded-full ${isEligible ? 'bg-emerald-400 shadow-[0_0_8px_rgba(52,211,153,0.8)]' : 'bg-yellow-400 shadow-[0_0_8px_rgba(250,204,21,0.8)]'} animate-pulse`} />
             <span className="text-xs font-bold text-amber-300 uppercase tracking-wider font-mono">
               {truncatedAddress}
             </span>

@@ -13,7 +13,8 @@ import {
   AlertCircle,
   Clock,
   Sparkles,
-  Wallet
+  Wallet,
+  Lock
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CoinIcon } from '@/components/CoinIcon';
@@ -31,7 +32,7 @@ interface WithdrawalRecord {
 }
 
 export default function WithdrawPage() {
-  const { primaryWallet, setShowAuthFlow } = useAppWallet();
+  const { primaryWallet, setShowAuthFlow, realBalance, isCheckingBalance, isEligible } = useAppWallet();
   const address = primaryWallet?.address;
 
   const [bankCoins, setBankCoins] = useState<number>(0);
@@ -110,6 +111,11 @@ export default function WithdrawPage() {
 
     if (!address) {
       setShowAuthFlow(true);
+      return;
+    }
+
+    if (!isEligible) {
+      setErrorMsg('Withdrawal locked! You must hold at least 1,000,000 $REAL tokens in your wallet to withdraw.');
       return;
     }
 
@@ -238,6 +244,34 @@ export default function WithdrawPage() {
             </div>
           </div>
 
+          {/* $REAL Token Gate Requirement Notice */}
+          {address && (
+            <div className={`p-4 rounded-2xl border text-xs font-mono flex items-center justify-between gap-3 ${
+              isCheckingBalance
+                ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-300 animate-pulse'
+                : isEligible
+                ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                : 'bg-red-500/15 border-red-500/40 text-red-300'
+            }`}>
+              <div className="flex items-center gap-3">
+                <img src="/logo.jpeg" alt="$REAL" className="w-8 h-8 rounded-full border border-amber-400/40 object-cover shrink-0" />
+                <div className="flex flex-col gap-0.5">
+                  <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                    $REAL TOKEN HOLDINGS REQUIREMENT
+                  </span>
+                  <span className="text-white text-xs">
+                    Current Balance: <strong className="text-yellow-300">{isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} $REAL`}</strong> (Min Required: 1,000,000 $REAL)
+                  </span>
+                </div>
+              </div>
+              <span className={`px-3 py-1 rounded-xl text-[10px] font-bold uppercase shrink-0 font-mono ${
+                isEligible ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
+              }`}>
+                {isCheckingBalance ? 'VERIFYING' : isEligible ? 'WITHDRAWAL UNLOCKED' : 'WITHDRAWAL LOCKED'}
+              </span>
+            </div>
+          )}
+
           <form onSubmit={handleWithdraw} className="space-y-6">
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
@@ -326,10 +360,27 @@ export default function WithdrawPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting || coinsNum < 1000 || coinsNum > bankCoins}
-              className="w-full py-4 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-bold font-press-start text-xs sm:text-sm rounded-2xl shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] transition-all cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed transform hover:scale-[1.01] active:scale-[0.99]"
+              disabled={isSubmitting || coinsNum < 1000 || coinsNum > bankCoins || !address || !isEligible || isCheckingBalance}
+              className={`w-full py-4 font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${
+                !address
+                  ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] cursor-pointer'
+                  : isCheckingBalance
+                  ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 cursor-wait animate-pulse'
+                  : isEligible
+                  ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] cursor-pointer'
+                  : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+              }`}
             >
-              {isSubmitting ? 'PROCESSING TREASURY TRANSACTION...' : !address ? 'CONNECT WALLET TO WITHDRAW' : 'EXCHANGE & WITHDRAW NOW'}
+              {address && !isEligible && !isCheckingBalance && <Lock className="w-4 h-4 text-red-400 shrink-0" />}
+              {isSubmitting
+                ? 'PROCESSING TREASURY TRANSACTION...'
+                : !address
+                ? 'CONNECT WALLET TO WITHDRAW'
+                : isCheckingBalance
+                ? 'VERIFYING $REAL BALANCE...'
+                : isEligible
+                ? 'EXCHANGE & WITHDRAW NOW'
+                : 'LOCKED (NEED 1,000,000 $REAL)'}
             </button>
           </form>
         </div>

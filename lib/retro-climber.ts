@@ -102,6 +102,45 @@ interface MarioNpc {
   frameTimer: number;
 }
 
+interface TomJerryNpc {
+  id: number;
+  platformId: number;
+  xOffset: number;
+  y: number;
+  width: number;
+  height: number;
+  touched: boolean;
+  state: 'waiting' | 'celebrating';
+  frame: number;
+  frameTimer: number;
+}
+
+interface AhhMonsterNpc {
+  id: number;
+  platformId: number;
+  xOffset: number;
+  y: number;
+  width: number;
+  height: number;
+  touched: boolean;
+  state: 'waiting' | 'celebrating';
+  frame: number;
+  frameTimer: number;
+}
+
+interface SonicNpc {
+  id: number;
+  platformId: number;
+  xOffset: number;
+  y: number;
+  width: number;
+  height: number;
+  touched: boolean;
+  state: 'waiting' | 'celebrating';
+  frame: number;
+  frameTimer: number;
+}
+
 interface Particle {
   x: number;
   y: number;
@@ -229,6 +268,81 @@ class SoundSystem {
 
     osc.start(time);
     osc.stop(time + notes.length * 0.08 + 0.1);
+  }
+
+  public playTomAndJerry() {
+    this.initCtx();
+    if (this.isMuted || !this.ctx) return;
+
+    const time = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    // 5-note rapid ascending victory flourish: C5, E5, G5, B5, C6
+    const notes = [523.25, 659.25, 783.99, 987.77, 1046.50];
+    notes.forEach((freq, idx) => {
+      osc.frequency.setValueAtTime(freq, time + idx * 0.06);
+    });
+
+    gain.gain.setValueAtTime(0.14, time);
+    gain.gain.linearRampToValueAtTime(0.01, time + notes.length * 0.06 + 0.12);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(time);
+    osc.stop(time + notes.length * 0.06 + 0.12);
+  }
+
+  public playAhhMonster() {
+    this.initCtx();
+    if (this.isMuted || !this.ctx) return;
+
+    const time = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sawtooth';
+    // 6-note monster victory fanfare: E4, G#4, B4, E5, G#5, B5
+    const notes = [329.63, 415.30, 493.88, 659.25, 830.61, 987.77];
+    notes.forEach((freq, idx) => {
+      osc.frequency.setValueAtTime(freq, time + idx * 0.05);
+    });
+
+    gain.gain.setValueAtTime(0.15, time);
+    gain.gain.linearRampToValueAtTime(0.01, time + notes.length * 0.05 + 0.15);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(time);
+    osc.stop(time + notes.length * 0.05 + 0.15);
+  }
+
+  public playSonic() {
+    this.initCtx();
+    if (this.isMuted || !this.ctx) return;
+
+    const time = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'sine';
+    // Sonic high-speed chime: F#5, B5, D#6, F#6, B6
+    const notes = [739.99, 987.77, 1244.51, 1479.98, 1975.53];
+    notes.forEach((freq, idx) => {
+      osc.frequency.setValueAtTime(freq, time + idx * 0.04);
+    });
+
+    gain.gain.setValueAtTime(0.14, time);
+    gain.gain.linearRampToValueAtTime(0.01, time + notes.length * 0.04 + 0.16);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(time);
+    osc.stop(time + notes.length * 0.04 + 0.16);
   }
 
   public playSpring() {
@@ -391,6 +505,12 @@ export class GameEngine {
   private rocky17Bg = new Image();
   private marioWaitingImg = new Image();
   private marioCheerImg = new Image();
+  private tnjWaitingImg = new Image();
+  private tnjCelebrateImg = new Image();
+  private ahhMonsterWaitingImg = new Image();
+  private ahhMonsterCelebrateImg = new Image();
+  private sonicWaitingImg = new Image();
+  private sonicCelebrateImg = new Image();
   private assetsLoaded = false;
 
   public setCharacter(id: CharacterId) {
@@ -449,6 +569,9 @@ export class GameEngine {
   private platforms: Platform[] = [];
   private coins: Coin[] = [];
   private marios: MarioNpc[] = [];
+  private tomJerryNpcs: TomJerryNpc[] = [];
+  private ahhMonsters: AhhMonsterNpc[] = [];
+  private sonics: SonicNpc[] = [];
   private particles: Particle[] = [];
 
   // Inputs
@@ -477,7 +600,7 @@ export class GameEngine {
 
   private loadAssets() {
     const charEntries = Object.entries(CHARACTERS) as [CharacterId, CharacterConfig][];
-    const totalAssets = charEntries.length * 3 + 13;
+    const totalAssets = charEntries.length * 3 + 19;
     let loaded = 0;
 
     const onAssetLoad = () => {
@@ -494,8 +617,8 @@ export class GameEngine {
       console.warn(`Asset failed to load: ${src}. Generating pixelated fallback.`);
       // Create colored dummy image
       const canvas = document.createElement('canvas');
-      const isSpriteSheet = name.startsWith('walk') || name === 'coin' || name.startsWith('mario');
-      canvas.width = isSpriteSheet ? (name.startsWith('mario') ? 512 : (name === 'coin' ? 1536 : 1536)) : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 937;
+      const isSpriteSheet = name.startsWith('walk') || name === 'coin' || name.startsWith('mario') || name.startsWith('tnj') || name.startsWith('ahh') || name.startsWith('sonic');
+      canvas.width = isSpriteSheet ? (name.startsWith('mario') || name === 'tnj-waiting' || name === 'ahh-waiting' || name === 'sonic-waiting' ? 512 : (name === 'tnj-celebrate' || name === 'ahh-celebrate' || name === 'sonic-celebrate') ? 768 : 1536) : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 937;
       canvas.height = isSpriteSheet ? 256 : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 1678;
       const ctx = canvas.getContext('2d')!;
       
@@ -540,6 +663,33 @@ export class GameEngine {
           ctx.fillStyle = '#ffffff';
           ctx.fillRect(i * 256 + 96, 96, 64, 64);
         }
+      } else if (name.startsWith('tnj')) {
+        // Draw 2 or 3 frames of Tom & Jerry
+        const frameCount = name === 'tnj-celebrate' ? 3 : 2;
+        for (let i = 0; i < frameCount; i++) {
+          ctx.fillStyle = fallbackColor;
+          ctx.fillRect(i * 256 + 64, 64, 128, 128);
+          ctx.fillStyle = '#fbbf24';
+          ctx.fillRect(i * 256 + 96, 96, 64, 64);
+        }
+      } else if (name.startsWith('ahh')) {
+        // Draw 2 or 3 frames of Ahh Monsters
+        const frameCount = name === 'ahh-celebrate' ? 3 : 2;
+        for (let i = 0; i < frameCount; i++) {
+          ctx.fillStyle = fallbackColor;
+          ctx.fillRect(i * 256 + 64, 64, 128, 128);
+          ctx.fillStyle = '#c084fc';
+          ctx.fillRect(i * 256 + 96, 96, 64, 64);
+        }
+      } else if (name.startsWith('sonic')) {
+        // Draw 2 or 3 frames of Sonic
+        const frameCount = name === 'sonic-celebrate' ? 3 : 2;
+        for (let i = 0; i < frameCount; i++) {
+          ctx.fillStyle = fallbackColor;
+          ctx.fillRect(i * 256 + 64, 64, 128, 128);
+          ctx.fillStyle = '#38bdf8';
+          ctx.fillRect(i * 256 + 96, 96, 64, 64);
+        }
       } else {
         // Backgrounds
         ctx.fillStyle = fallbackColor;
@@ -576,6 +726,12 @@ export class GameEngine {
         else if (name === 'rocky-17') this.rocky17Bg = img;
         else if (name === 'mario-waiting') this.marioWaitingImg = img;
         else if (name === 'mario-cheer') this.marioCheerImg = img;
+        else if (name === 'tnj-waiting') this.tnjWaitingImg = img;
+        else if (name === 'tnj-celebrate') this.tnjCelebrateImg = img;
+        else if (name === 'ahh-waiting') this.ahhMonsterWaitingImg = img;
+        else if (name === 'ahh-celebrate') this.ahhMonsterCelebrateImg = img;
+        else if (name === 'sonic-waiting') this.sonicWaitingImg = img;
+        else if (name === 'sonic-celebrate') this.sonicCelebrateImg = img;
         onAssetLoad();
       };
     };
@@ -657,6 +813,33 @@ export class GameEngine {
     this.marioCheerImg.src = '/cartoons/mario/cheer_mario.png';
     this.marioCheerImg.onload = onAssetLoad;
     this.marioCheerImg.onerror = () => handleLoadError('mario-cheer', '#ef4444', '/cartoons/mario/cheer_mario.png');
+
+    // Load Tom and Jerry Sprites
+    this.tnjWaitingImg.src = '/cartoons/tom and jerry/wait_tnj.png';
+    this.tnjWaitingImg.onload = onAssetLoad;
+    this.tnjWaitingImg.onerror = () => handleLoadError('tnj-waiting', '#3b82f6', '/cartoons/tom and jerry/wait_tnj.png');
+
+    this.tnjCelebrateImg.src = '/cartoons/tom and jerry/tnj_celebrate.png';
+    this.tnjCelebrateImg.onload = onAssetLoad;
+    this.tnjCelebrateImg.onerror = () => handleLoadError('tnj-celebrate', '#3b82f6', '/cartoons/tom and jerry/tnj_celebrate.png');
+
+    // Load Ahh Monsters Sprites
+    this.ahhMonsterWaitingImg.src = '/cartoons/Ahh monsters/waitt monsters.png';
+    this.ahhMonsterWaitingImg.onload = onAssetLoad;
+    this.ahhMonsterWaitingImg.onerror = () => handleLoadError('ahh-waiting', '#a855f7', '/cartoons/Ahh monsters/waitt monsters.png');
+
+    this.ahhMonsterCelebrateImg.src = '/cartoons/Ahh monsters/cleebrate monsters.png';
+    this.ahhMonsterCelebrateImg.onload = onAssetLoad;
+    this.ahhMonsterCelebrateImg.onerror = () => handleLoadError('ahh-celebrate', '#a855f7', '/cartoons/Ahh monsters/cleebrate monsters.png');
+
+    // Load Sonic Sprites
+    this.sonicWaitingImg.src = '/cartoons/sonic/sonic_wait.png';
+    this.sonicWaitingImg.onload = onAssetLoad;
+    this.sonicWaitingImg.onerror = () => handleLoadError('sonic-waiting', '#2563eb', '/cartoons/sonic/sonic_wait.png');
+
+    this.sonicCelebrateImg.src = '/cartoons/sonic/sonic_celebrate.png';
+    this.sonicCelebrateImg.onload = onAssetLoad;
+    this.sonicCelebrateImg.onerror = () => handleLoadError('sonic-celebrate', '#2563eb', '/cartoons/sonic/sonic_celebrate.png');
   }
 
   private initInputs() {
@@ -780,6 +963,9 @@ export class GameEngine {
     this.platforms = [];
     this.coins = [];
     this.marios = [];
+    this.tomJerryNpcs = [];
+    this.ahhMonsters = [];
+    this.sonics = [];
     this.particles = [];
 
     // 1. Bottom Starting Ground Platform (spanning entire canvas width)
@@ -863,9 +1049,9 @@ export class GameEngine {
       });
 
       // Mario Spawning (10% chance on moving pipe platforms)
-      let hasMario = false;
+      let hasNpc = false;
       if (type === 'MOVING' && Math.random() < 0.10) {
-        hasMario = true;
+        hasNpc = true;
         const marioSize = 54;
         this.marios.push({
           id: this.nextPlatformId++,
@@ -881,8 +1067,62 @@ export class GameEngine {
         });
       }
 
-      // Coin Spawning on Standard/Moving platforms (if Mario is not on it)
-      if (type !== 'CRUMBLING' && !hasMario && Math.random() < 0.28) {
+      // Non-pipe Cartoon Characters Spawning (Each has 5% chance, strictly max 1 character per platform)
+      if (type !== 'MOVING') {
+        const roll = Math.random();
+        if (roll < 0.05) {
+          // Tom & Jerry (5% chance)
+          hasNpc = true;
+          const tnjSize = 56;
+          this.tomJerryNpcs.push({
+            id: this.nextPlatformId++,
+            platformId: platformId,
+            xOffset: Math.max(0, (width - tnjSize) / 2),
+            y: currentY + tnjSize,
+            width: tnjSize,
+            height: tnjSize,
+            touched: false,
+            state: 'waiting',
+            frame: 0,
+            frameTimer: Math.random() * 2
+          });
+        } else if (roll < 0.10) {
+          // Ahh Monsters (5% chance)
+          hasNpc = true;
+          const monsterSize = 56;
+          this.ahhMonsters.push({
+            id: this.nextPlatformId++,
+            platformId: platformId,
+            xOffset: Math.max(0, (width - monsterSize) / 2),
+            y: currentY + monsterSize,
+            width: monsterSize,
+            height: monsterSize,
+            touched: false,
+            state: 'waiting',
+            frame: 0,
+            frameTimer: Math.random() * 2
+          });
+        } else if (roll < 0.15) {
+          // Sonic (5% chance)
+          hasNpc = true;
+          const sonicSize = 56;
+          this.sonics.push({
+            id: this.nextPlatformId++,
+            platformId: platformId,
+            xOffset: Math.max(0, (width - sonicSize) / 2),
+            y: currentY + sonicSize,
+            width: sonicSize,
+            height: sonicSize,
+            touched: false,
+            state: 'waiting',
+            frame: 0,
+            frameTimer: Math.random() * 2
+          });
+        }
+      }
+
+      // Coin Spawning on Standard/Moving platforms (if no character is on it)
+      if (type !== 'CRUMBLING' && !hasNpc && Math.random() < 0.28) {
         this.coins.push({
           id: this.nextPlatformId++,
           x: x + width / 2 - 14,
@@ -991,6 +1231,9 @@ export class GameEngine {
     this.platforms = this.platforms.filter((p) => p.y >= cleanupLimit || p.id === 1);
     this.coins = this.coins.filter((c) => c.y >= cleanupLimit);
     this.marios = this.marios.filter((m) => m.y >= cleanupLimit);
+    this.tomJerryNpcs = this.tomJerryNpcs.filter((t) => t.y >= cleanupLimit);
+    this.ahhMonsters = this.ahhMonsters.filter((a) => a.y >= cleanupLimit);
+    this.sonics = this.sonics.filter((s) => s.y >= cleanupLimit);
 
     // Update remaining platforms
     this.platforms.forEach((platform) => {
@@ -1125,6 +1368,114 @@ export class GameEngine {
       }
     });
 
+    // 6.c Tom & Jerry interaction & animation loops (2-frame wait, 3-frame celebrate)
+    this.tomJerryNpcs.forEach((tnj) => {
+      const platform = this.platforms.find((p) => p.id === tnj.platformId);
+      if (platform && platform.crumbled) return;
+
+      const shake = platform?.shakeOffset || 0;
+      const tnjX = platform ? platform.x + shake + tnj.xOffset : tnj.xOffset;
+      tnj.y = platform ? platform.y + tnj.height : tnj.y;
+
+      // Animation: waiting (2 frames), celebrating (3 frames)
+      const maxFrames = tnj.state === 'celebrating' ? 3 : 2;
+      tnj.frameTimer += (tnj.state === 'celebrating' ? 0.12 : 0.08);
+      tnj.frame = Math.floor(tnj.frameTimer) % maxFrames;
+
+      if (!tnj.touched) {
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y - this.player.height / 2;
+        const tnjCenterX = tnjX + tnj.width / 2;
+        const tnjCenterY = tnj.y - tnj.height / 2;
+        const distance = Math.hypot(playerCenterX - tnjCenterX, playerCenterY - tnjCenterY);
+
+        const overlapX = this.player.x + this.player.width >= tnjX && this.player.x <= tnjX + tnj.width;
+        const overlapY = this.player.y >= tnj.y - tnj.height && this.player.y - this.player.height <= tnj.y;
+
+        if (distance < 48 || (overlapX && overlapY)) {
+          tnj.touched = true;
+          tnj.state = 'celebrating';
+          tnj.frameTimer = 0;
+          this.score += 200; // Award 200 bonus points on touch
+          this.callbacks.onScoreChange(this.score);
+          this.audio.playTomAndJerry();
+          this.triggerTomJerrySparks(tnjCenterX, tnjCenterY);
+        }
+      }
+    });
+
+    // 6.d Ahh Monsters interaction & animation loops (2-frame wait, 3-frame celebrate)
+    this.ahhMonsters.forEach((ahh) => {
+      const platform = this.platforms.find((p) => p.id === ahh.platformId);
+      if (platform && platform.crumbled) return;
+
+      const shake = platform?.shakeOffset || 0;
+      const ahhX = platform ? platform.x + shake + ahh.xOffset : ahh.xOffset;
+      ahh.y = platform ? platform.y + ahh.height : ahh.y;
+
+      // Animation: waiting (2 frames), celebrating (3 frames)
+      const maxFrames = ahh.state === 'celebrating' ? 3 : 2;
+      ahh.frameTimer += (ahh.state === 'celebrating' ? 0.12 : 0.08);
+      ahh.frame = Math.floor(ahh.frameTimer) % maxFrames;
+
+      if (!ahh.touched) {
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y - this.player.height / 2;
+        const ahhCenterX = ahhX + ahh.width / 2;
+        const ahhCenterY = ahh.y - ahh.height / 2;
+        const distance = Math.hypot(playerCenterX - ahhCenterX, playerCenterY - ahhCenterY);
+
+        const overlapX = this.player.x + this.player.width >= ahhX && this.player.x <= ahhX + ahh.width;
+        const overlapY = this.player.y >= ahh.y - ahh.height && this.player.y - this.player.height <= ahh.y;
+
+        if (distance < 48 || (overlapX && overlapY)) {
+          ahh.touched = true;
+          ahh.state = 'celebrating';
+          ahh.frameTimer = 0;
+          this.score += 300; // Award 300 bonus points on touch
+          this.callbacks.onScoreChange(this.score);
+          this.audio.playAhhMonster();
+          this.triggerAhhMonsterSparks(ahhCenterX, ahhCenterY);
+        }
+      }
+    });
+
+    // 6.e Sonic interaction & animation loops (2-frame wait, 3-frame celebrate)
+    this.sonics.forEach((sonic) => {
+      const platform = this.platforms.find((p) => p.id === sonic.platformId);
+      if (platform && platform.crumbled) return;
+
+      const shake = platform?.shakeOffset || 0;
+      const sonicX = platform ? platform.x + shake + sonic.xOffset : sonic.xOffset;
+      sonic.y = platform ? platform.y + sonic.height : sonic.y;
+
+      // Animation: waiting (2 frames), celebrating (3 frames)
+      const maxFrames = sonic.state === 'celebrating' ? 3 : 2;
+      sonic.frameTimer += (sonic.state === 'celebrating' ? 0.12 : 0.08);
+      sonic.frame = Math.floor(sonic.frameTimer) % maxFrames;
+
+      if (!sonic.touched) {
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y - this.player.height / 2;
+        const sonicCenterX = sonicX + sonic.width / 2;
+        const sonicCenterY = sonic.y - sonic.height / 2;
+        const distance = Math.hypot(playerCenterX - sonicCenterX, playerCenterY - sonicCenterY);
+
+        const overlapX = this.player.x + this.player.width >= sonicX && this.player.x <= sonicX + sonic.width;
+        const overlapY = this.player.y >= sonic.y - sonic.height && this.player.y - this.player.height <= sonic.y;
+
+        if (distance < 48 || (overlapX && overlapY)) {
+          sonic.touched = true;
+          sonic.state = 'celebrating';
+          sonic.frameTimer = 0;
+          this.score += 100; // Award 100 bonus points on touch
+          this.callbacks.onScoreChange(this.score);
+          this.audio.playSonic();
+          this.triggerSonicSparks(sonicCenterX, sonicCenterY);
+        }
+      }
+    });
+
     // 7. Particles update
     this.particles.forEach((p) => {
       p.x += p.vx;
@@ -1205,6 +1556,108 @@ export class GameEngine {
         vy: Math.sin(angle) * speed,
         size: 3 + Math.random() * 4,
         color: ['#ef4444', '#3b82f6', '#ffd700', '#22c55e', '#ffffff'][Math.floor(Math.random() * 5)],
+        alpha: 1,
+        life: 25 + Math.random() * 15,
+        maxLife: 40,
+        gravity: true
+      });
+    }
+  }
+
+  private triggerTomJerrySparks(x: number, y: number) {
+    // Floating score text (+200)
+    this.particles.push({
+      x: x - 24,
+      y: y + 20,
+      vx: 0,
+      vy: 1.2,
+      size: 14,
+      color: '#38bdf8',
+      alpha: 1,
+      life: 45,
+      maxLife: 45,
+      text: '+200'
+    });
+
+    // Tom & Jerry celebratory cyan / gold sparks
+    for (let i = 0; i < 24; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.0 + Math.random() * 3.8;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 5,
+        color: ['#38bdf8', '#fbbf24', '#f43f5e', '#a855f7', '#ffffff'][Math.floor(Math.random() * 5)],
+        alpha: 1,
+        life: 25 + Math.random() * 15,
+        maxLife: 40,
+        gravity: true
+      });
+    }
+  }
+
+  private triggerAhhMonsterSparks(x: number, y: number) {
+    // Floating score text (+300)
+    this.particles.push({
+      x: x - 24,
+      y: y + 20,
+      vx: 0,
+      vy: 1.2,
+      size: 14,
+      color: '#c084fc',
+      alpha: 1,
+      life: 45,
+      maxLife: 45,
+      text: '+300'
+    });
+
+    // Ahh Monster celebratory purple / magenta / neon green / gold sparks
+    for (let i = 0; i < 26; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.0 + Math.random() * 4.0;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 5,
+        color: ['#a855f7', '#d946ef', '#4ade80', '#fbbf24', '#ffffff'][Math.floor(Math.random() * 5)],
+        alpha: 1,
+        life: 25 + Math.random() * 15,
+        maxLife: 40,
+        gravity: true
+      });
+    }
+  }
+
+  private triggerSonicSparks(x: number, y: number) {
+    // Floating score text (+100)
+    this.particles.push({
+      x: x - 24,
+      y: y + 20,
+      vx: 0,
+      vy: 1.2,
+      size: 14,
+      color: '#38bdf8',
+      alpha: 1,
+      life: 45,
+      maxLife: 45,
+      text: '+100'
+    });
+
+    // Sonic celebratory sonic blue / cyan / gold / white sparks
+    for (let i = 0; i < 26; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.2 + Math.random() * 4.2;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 5,
+        color: ['#0284c7', '#38bdf8', '#fbbf24', '#f59e0b', '#ffffff'][Math.floor(Math.random() * 5)],
         alpha: 1,
         life: 25 + Math.random() * 15,
         maxLife: 40,
@@ -1313,6 +1766,9 @@ export class GameEngine {
     this.platforms.forEach((platform) => this.drawPlatform(platform));
     this.coins.forEach((coin) => this.drawCoin(coin));
     this.marios.forEach((mario) => this.drawMario(mario));
+    this.tomJerryNpcs.forEach((tnj) => this.drawTomJerry(tnj));
+    this.ahhMonsters.forEach((ahh) => this.drawAhhMonster(ahh));
+    this.sonics.forEach((sonic) => this.drawSonic(sonic));
     this.drawParticles();
 
     // C. Draw Player Character
@@ -1455,6 +1911,101 @@ export class GameEngine {
     } else {
       this.ctx.fillStyle = '#ef4444';
       this.ctx.fillRect(marioX, screenY, mario.width, mario.height);
+    }
+  }
+
+  // Draw Tom and Jerry NPC (waiting / celebrating animation)
+  private drawTomJerry(tnj: TomJerryNpc) {
+    const platform = this.platforms.find((p) => p.id === tnj.platformId);
+    if (platform && platform.crumbled) return;
+
+    const shake = platform?.shakeOffset || 0;
+    const tnjX = platform ? platform.x + shake + tnj.xOffset : tnj.xOffset;
+    const screenY = this.canvas.height - (tnj.y - this.cameraY);
+
+    if (this.assetsLoaded) {
+      const img = tnj.state === 'celebrating' ? this.tnjCelebrateImg : this.tnjWaitingImg;
+      if (img && img.complete && img.naturalWidth > 0) {
+        const frameWidth = 256;
+        const frameHeight = 256;
+        const sx = tnj.frame * frameWidth;
+
+        this.ctx.drawImage(
+          img,
+          sx, 0, frameWidth, frameHeight,
+          tnjX, screenY, tnj.width, tnj.height
+        );
+      } else {
+        this.ctx.fillStyle = tnj.state === 'celebrating' ? '#38bdf8' : '#3b82f6';
+        this.ctx.fillRect(tnjX, screenY, tnj.width, tnj.height);
+      }
+    } else {
+      this.ctx.fillStyle = '#3b82f6';
+      this.ctx.fillRect(tnjX, screenY, tnj.width, tnj.height);
+    }
+  }
+
+  // Draw Ahh Monster NPC (waiting / celebrating animation)
+  private drawAhhMonster(ahh: AhhMonsterNpc) {
+    const platform = this.platforms.find((p) => p.id === ahh.platformId);
+    if (platform && platform.crumbled) return;
+
+    const shake = platform?.shakeOffset || 0;
+    const ahhX = platform ? platform.x + shake + ahh.xOffset : ahh.xOffset;
+    const screenY = this.canvas.height - (ahh.y - this.cameraY);
+
+    if (this.assetsLoaded) {
+      const img = ahh.state === 'celebrating' ? this.ahhMonsterCelebrateImg : this.ahhMonsterWaitingImg;
+      if (img && img.complete && img.naturalWidth > 0) {
+        const frameCount = ahh.state === 'celebrating' ? 3 : 2;
+        const frameWidth = img.naturalWidth / frameCount;
+        const frameHeight = img.naturalHeight;
+        const sx = ahh.frame * frameWidth;
+
+        this.ctx.drawImage(
+          img,
+          sx, 0, frameWidth, frameHeight,
+          ahhX, screenY, ahh.width, ahh.height
+        );
+      } else {
+        this.ctx.fillStyle = ahh.state === 'celebrating' ? '#c084fc' : '#a855f7';
+        this.ctx.fillRect(ahhX, screenY, ahh.width, ahh.height);
+      }
+    } else {
+      this.ctx.fillStyle = '#a855f7';
+      this.ctx.fillRect(ahhX, screenY, ahh.width, ahh.height);
+    }
+  }
+
+  // Draw Sonic NPC (waiting / celebrating animation)
+  private drawSonic(sonic: SonicNpc) {
+    const platform = this.platforms.find((p) => p.id === sonic.platformId);
+    if (platform && platform.crumbled) return;
+
+    const shake = platform?.shakeOffset || 0;
+    const sonicX = platform ? platform.x + shake + sonic.xOffset : sonic.xOffset;
+    const screenY = this.canvas.height - (sonic.y - this.cameraY);
+
+    if (this.assetsLoaded) {
+      const img = sonic.state === 'celebrating' ? this.sonicCelebrateImg : this.sonicWaitingImg;
+      if (img && img.complete && img.naturalWidth > 0) {
+        const frameCount = sonic.state === 'celebrating' ? 3 : 2;
+        const frameWidth = img.naturalWidth / frameCount;
+        const frameHeight = img.naturalHeight;
+        const sx = sonic.frame * frameWidth;
+
+        this.ctx.drawImage(
+          img,
+          sx, 0, frameWidth, frameHeight,
+          sonicX, screenY, sonic.width, sonic.height
+        );
+      } else {
+        this.ctx.fillStyle = sonic.state === 'celebrating' ? '#38bdf8' : '#2563eb';
+        this.ctx.fillRect(sonicX, screenY, sonic.width, sonic.height);
+      }
+    } else {
+      this.ctx.fillStyle = '#2563eb';
+      this.ctx.fillRect(sonicX, screenY, sonic.width, sonic.height);
     }
   }
 

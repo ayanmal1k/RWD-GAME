@@ -11,7 +11,7 @@ export const REAL_TOKEN_MINT =
   process.env.REAL_TOKEN_MINT_ADDRESS ||
   'BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv';
 
-export const MIN_REAL_REQUIRED = 1000000;
+export const MIN_REAL_REQUIRED = Number(process.env.NEXT_PUBLIC_MIN_REAL_REQUIRED ?? 0);
 
 export async function fetchRealTokenBalance(
   ownerAddress: string,

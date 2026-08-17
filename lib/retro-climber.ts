@@ -17,6 +17,49 @@ export interface GameEngineCallbacks {
   onGameOver: (finalScore: number, finalCoins: number, durationSeconds: number) => void;
 }
 
+export type CharacterId = 'red' | 'blue' | 'orange' | 'green';
+
+export interface CharacterConfig {
+  id: CharacterId;
+  idleSrc: string;
+  jumpSrc: string;
+  walkSrc: string;
+}
+
+export const CHARACTERS: Record<CharacterId, CharacterConfig> = {
+  red: {
+    id: 'red',
+    idleSrc: '/characters/red/5.png',
+    jumpSrc: '/characters/red/6.png',
+    walkSrc: '/characters/red/red.png',
+  },
+  blue: {
+    id: 'blue',
+    idleSrc: '/characters/blue/7.png',
+    jumpSrc: '/characters/blue/8.png',
+    walkSrc: '/characters/blue/blue.png',
+  },
+  orange: {
+    id: 'orange',
+    idleSrc: '/characters/orange/9.png',
+    jumpSrc: '/characters/orange/10.png',
+    walkSrc: '/characters/orange/orange.png',
+  },
+  green: {
+    id: 'green',
+    idleSrc: '/characters/green/11.png',
+    jumpSrc: '/characters/green/12.png',
+    walkSrc: '/characters/green/green.png',
+  },
+};
+
+export const CHARACTER_LIST: CharacterConfig[] = [
+  CHARACTERS.red,
+  CHARACTERS.blue,
+  CHARACTERS.orange,
+  CHARACTERS.green,
+];
+
 type PlatformType = 'STANDARD' | 'MOVING' | 'CRUMBLING' | 'SPRING';
 
 interface Platform {
@@ -287,6 +330,13 @@ export class GameEngine {
   private callbacks: GameEngineCallbacks;
 
   // Assets
+  private characterSprites: Record<CharacterId, { walk: HTMLImageElement; idle: HTMLImageElement; jump: HTMLImageElement }> = {
+    red: { walk: new Image(), idle: new Image(), jump: new Image() },
+    blue: { walk: new Image(), idle: new Image(), jump: new Image() },
+    orange: { walk: new Image(), idle: new Image(), jump: new Image() },
+    green: { walk: new Image(), idle: new Image(), jump: new Image() },
+  };
+  private currentCharacterId: CharacterId = 'red';
   private walkSprite = new Image();
   private idleSprite = new Image();
   private jumpSprite = new Image();
@@ -302,6 +352,20 @@ export class GameEngine {
   private rocky13Bg = new Image();
   private rocky17Bg = new Image();
   private assetsLoaded = false;
+
+  public setCharacter(id: CharacterId) {
+    this.currentCharacterId = id;
+    const sprites = this.characterSprites[id];
+    if (sprites) {
+      this.walkSprite = sprites.walk;
+      this.idleSprite = sprites.idle;
+      this.jumpSprite = sprites.jump;
+    }
+  }
+
+  public getCharacter(): CharacterId {
+    return this.currentCharacterId;
+  }
 
   // Sound System
   public audio: SoundSystem;
@@ -371,11 +435,15 @@ export class GameEngine {
   }
 
   private loadAssets() {
+    const charEntries = Object.entries(CHARACTERS) as [CharacterId, CharacterConfig][];
+    const totalAssets = charEntries.length * 3 + 11;
     let loaded = 0;
+
     const onAssetLoad = () => {
       loaded++;
-      if (loaded === 14) {
+      if (loaded >= totalAssets) {
         this.assetsLoaded = true;
+        this.setCharacter(this.currentCharacterId);
         this.resetGame();
         this.drawStartScreen();
       }
@@ -385,12 +453,12 @@ export class GameEngine {
       console.warn(`Asset failed to load: ${src}. Generating pixelated fallback.`);
       // Create colored dummy image
       const canvas = document.createElement('canvas');
-      const isSpriteSheet = name === 'walk' || name === 'coin';
-      canvas.width = isSpriteSheet ? 1536 : name === 'idle' || name === 'jump' ? 256 : 937;
-      canvas.height = isSpriteSheet ? 256 : name === 'idle' || name === 'jump' ? 256 : 1678;
+      const isSpriteSheet = name.startsWith('walk') || name === 'coin';
+      canvas.width = isSpriteSheet ? 1536 : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 937;
+      canvas.height = isSpriteSheet ? 256 : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 1678;
       const ctx = canvas.getContext('2d')!;
       
-      if (name === 'walk') {
+      if (name.startsWith('walk')) {
         // Draw 6 frames of character walking
         for (let i = 0; i < 6; i++) {
           ctx.fillStyle = fallbackColor;
@@ -402,7 +470,7 @@ export class GameEngine {
           ctx.fillRect(i * 256 + 80 + (i % 2) * 20, 192, 30, 40);
           ctx.fillRect(i * 256 + 140 - (i % 2) * 20, 192, 30, 40);
         }
-      } else if (name === 'idle' || name === 'jump') {
+      } else if (name.startsWith('idle') || name.startsWith('jump')) {
         ctx.fillStyle = fallbackColor;
         ctx.fillRect(64, 64, 128, 128);
         ctx.fillStyle = '#000000';
@@ -437,38 +505,45 @@ export class GameEngine {
       const img = new Image();
       img.src = canvas.toDataURL();
       img.onload = () => {
-        if (name === 'walk') this.walkSprite = img;
-        if (name === 'idle') this.idleSprite = img;
-        if (name === 'jump') this.jumpSprite = img;
-        if (name === 'coin') this.coinSprite = img;
-        if (name === 'ground') this.groundBg = img;
-        if (name === 'sky') this.skyBg = img;
-        if (name === 'sky2') this.sky2Bg = img;
-        if (name === 'rocky') this.rockyBg = img;
-        if (name === 'moss') this.mossBg = img;
-        if (name === 'log') this.logBg = img;
-        if (name === 'crumbling') this.crumblingBg = img;
-        if (name === 'rocky-5') this.rocky5Bg = img;
-        if (name === 'rocky-13') this.rocky13Bg = img;
-        if (name === 'rocky-17') this.rocky17Bg = img;
+        if (name.startsWith('walk-')) {
+          const charId = name.replace('walk-', '') as CharacterId;
+          if (this.characterSprites[charId]) this.characterSprites[charId].walk = img;
+        } else if (name.startsWith('idle-')) {
+          const charId = name.replace('idle-', '') as CharacterId;
+          if (this.characterSprites[charId]) this.characterSprites[charId].idle = img;
+        } else if (name.startsWith('jump-')) {
+          const charId = name.replace('jump-', '') as CharacterId;
+          if (this.characterSprites[charId]) this.characterSprites[charId].jump = img;
+        } else if (name === 'coin') this.coinSprite = img;
+        else if (name === 'ground') this.groundBg = img;
+        else if (name === 'sky') this.skyBg = img;
+        else if (name === 'sky2') this.sky2Bg = img;
+        else if (name === 'rocky') this.rockyBg = img;
+        else if (name === 'moss') this.mossBg = img;
+        else if (name === 'log') this.logBg = img;
+        else if (name === 'crumbling') this.crumblingBg = img;
+        else if (name === 'rocky-5') this.rocky5Bg = img;
+        else if (name === 'rocky-13') this.rocky13Bg = img;
+        else if (name === 'rocky-17') this.rocky17Bg = img;
         onAssetLoad();
       };
     };
 
-    // Load Walk Sprite
-    this.walkSprite.src = '/walk.png';
-    this.walkSprite.onload = onAssetLoad;
-    this.walkSprite.onerror = () => handleLoadError('walk', '#ec4899', '/walk.png');
+    // Load Character Sprites for all 4 characters
+    for (const [id, cfg] of charEntries) {
+      const sprites = this.characterSprites[id];
+      sprites.walk.src = cfg.walkSrc;
+      sprites.walk.onload = onAssetLoad;
+      sprites.walk.onerror = () => handleLoadError(`walk-${id}`, '#ec4899', cfg.walkSrc);
 
-    // Load Idle Sprite
-    this.idleSprite.src = '/idle.png';
-    this.idleSprite.onload = onAssetLoad;
-    this.idleSprite.onerror = () => handleLoadError('idle', '#a78bfa', '/idle.png');
+      sprites.idle.src = cfg.idleSrc;
+      sprites.idle.onload = onAssetLoad;
+      sprites.idle.onerror = () => handleLoadError(`idle-${id}`, '#a78bfa', cfg.idleSrc);
 
-    // Load Jump Sprite
-    this.jumpSprite.src = '/jump.png';
-    this.jumpSprite.onload = onAssetLoad;
-    this.jumpSprite.onerror = () => handleLoadError('jump', '#f472b6', '/jump.png');
+      sprites.jump.src = cfg.jumpSrc;
+      sprites.jump.onload = onAssetLoad;
+      sprites.jump.onerror = () => handleLoadError(`jump-${id}`, '#f472b6', cfg.jumpSrc);
+    }
 
     // Load Coin Sprite
     this.coinSprite.src = '/coin.png';

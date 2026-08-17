@@ -19,6 +19,7 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CoinIcon } from '@/components/CoinIcon';
+import { MIN_REAL_REQUIRED } from '@/lib/solana';
 
 interface WithdrawalRecord {
   id: string;
@@ -116,7 +117,7 @@ export default function WithdrawPage() {
     }
 
     if (!isEligible) {
-      setErrorMsg('Withdrawal locked! You must hold at least 1,000,000 $REAL tokens in your wallet to withdraw.');
+      setErrorMsg(`Withdrawal locked! You must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $REAL tokens in your wallet to withdraw.`);
       return;
     }
 
@@ -261,7 +262,7 @@ export default function WithdrawPage() {
                       $REAL TOKEN HOLDINGS REQUIREMENT
                     </span>
                     <span className="text-white text-xs">
-                      Current Balance: <strong className="text-yellow-300">{isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} $REAL`}</strong> (Min Required: 1,000,000 $REAL)
+                      Current Balance: <strong className="text-yellow-300">{isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} $REAL`}</strong> {MIN_REAL_REQUIRED > 0 ? `(Min Required: ${MIN_REAL_REQUIRED.toLocaleString()} $REAL)` : '(No Min Required)'}
                     </span>
                   </div>
                 </div>
@@ -394,7 +395,7 @@ export default function WithdrawPage() {
                     ? 'VERIFYING $REAL BALANCE...'
                     : isEligible
                       ? 'EXCHANGE & WITHDRAW NOW'
-                      : 'LOCKED (NEED 1,000,000 $REAL)'}
+                      : `LOCKED (NEED ${MIN_REAL_REQUIRED.toLocaleString()} $REAL)`}
             </button>
           </form>
         </div>

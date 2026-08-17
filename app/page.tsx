@@ -1,12 +1,13 @@
 'use client';
 
 import React, { useEffect, useRef, useState } from 'react';
-import { GameEngine } from '@/lib/retro-climber';
+import { GameEngine, CHARACTERS, CHARACTER_LIST, CharacterId } from '@/lib/retro-climber';
 import { ConnectWalletButton } from '@/components/ConnectWalletButton';
 import { CoinIcon } from '@/components/CoinIcon';
 import { useAppWallet } from '@/components/DynamicProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
+import { MIN_REAL_REQUIRED } from '@/lib/solana';
 import {
   Pause,
   Volume2,
@@ -46,6 +47,7 @@ export default function Home() {
   const [isMuted, setIsMuted] = useState(false);
   const [isFullscreen, setIsFullscreen] = useState(false);
   const [isMobile, setIsMobile] = useState(false);
+  const [selectedCharacter, setSelectedCharacter] = useState<CharacterId | null>(null);
 
   // Game History Modal state
   const [showHistoryModal, setShowHistoryModal] = useState(false);
@@ -243,7 +245,7 @@ export default function Home() {
 
   const handleStartRestart = async () => {
     if (primaryWallet && !isEligible) {
-      console.warn("Blocked game start: Wallet holds less than 1,000,000 $REAL tokens");
+      console.warn(`Blocked game start: Wallet holds less than ${MIN_REAL_REQUIRED} $REAL tokens`);
       return;
     }
 
@@ -268,10 +270,25 @@ export default function Home() {
       }
     }
 
+    const characterPool: CharacterId[] = ['red', 'blue', 'orange', 'green'];
+    const chosenCharacter: CharacterId = selectedCharacter ?? characterPool[Math.floor(Math.random() * characterPool.length)];
+
     if (engineRef.current) {
+      engineRef.current.setCharacter(chosenCharacter);
       engineRef.current.startGame();
     }
   };
+
+  useEffect(() => {
+    const handleSpaceStart = (e: KeyboardEvent) => {
+      if (e.code === 'Space' && gameState === 'START' && !showHistoryModal && !showLeaderboardModal) {
+        e.preventDefault();
+        handlePlayClick();
+      }
+    };
+    window.addEventListener('keydown', handleSpaceStart);
+    return () => window.removeEventListener('keydown', handleSpaceStart);
+  }, [gameState, showHistoryModal, showLeaderboardModal, primaryWallet, isEligible, isCheckingBalance, selectedCharacter]);
 
   const toggleFullscreen = () => {
     const newVal = !isFullscreen;
@@ -342,13 +359,59 @@ export default function Home() {
                   $REAL CLIMBER
                 </h1>
 
-                <div className="relative w-20 h-20 sm:w-36 sm:h-36 mb-3 sm:mb-6 shrink-0">
+                {/* Large Character Idle Preview */}
+                <div className="relative w-20 h-20 sm:w-28 sm:h-28 mb-2 sm:mb-3 shrink-0">
                   <img
-                    src="/idle.png"
+                    src={selectedCharacter ? CHARACTERS[selectedCharacter].idleSrc : '/characters/red/5.png'}
                     alt="Character Idle"
                     className="w-full h-full object-contain pixelated animate-breathe drop-shadow-[0_0_15px_rgba(250,204,21,0.3)]"
                   />
                   <div className="absolute -bottom-2 left-1/2 -translate-x-1/2 w-12 sm:w-16 h-2 sm:h-3 bg-black/60 rounded-[50%] blur-sm animate-shadow-breathe"></div>
+                </div>
+
+                {/* CHARACTER SELECTOR (No names, idle preview with click to select) */}
+                <div className="w-full max-w-sm mb-3 sm:mb-4 shrink-0">
+                  <div className="flex items-center justify-center gap-1.5 mb-2">
+                    <span className="text-[8px] sm:text-[9px] font-press-start text-amber-400 tracking-wider uppercase">
+                      SELECT CLIMBER
+                    </span>
+                    <span className="text-[8px] font-mono text-amber-200/50">
+                      ({selectedCharacter ? 'SELECTED' : 'RANDOM ON START'})
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
+                    {CHARACTER_LIST.map((char) => {
+                      const isSelected = selectedCharacter === char.id;
+                      return (
+                        <button
+                          key={char.id}
+                          type="button"
+                          onClick={() => setSelectedCharacter(char.id)}
+                          className={`relative p-1.5 sm:p-2 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center cursor-pointer group ${
+                            isSelected
+                              ? 'bg-gradient-to-b from-amber-500/30 to-yellow-500/15 border-yellow-400 shadow-[0_0_18px_rgba(250,204,21,0.6)] scale-105 ring-2 ring-yellow-400/80'
+                              : 'bg-[#140f05]/90 border-yellow-500/25 hover:border-yellow-400/60 hover:bg-yellow-500/10 hover:scale-105'
+                          }`}
+                          title="Click to select"
+                        >
+                          <div className="w-11 h-11 sm:w-13 sm:h-13 relative flex items-center justify-center">
+                            <img
+                              src={char.idleSrc}
+                              alt="Climber"
+                              className={`w-full h-full object-contain pixelated transition-transform duration-200 ${
+                                isSelected ? 'animate-breathe scale-110 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'opacity-80 group-hover:opacity-100 group-hover:scale-105'
+                              }`}
+                            />
+                          </div>
+                          {isSelected && (
+                            <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-yellow-400 text-black rounded-full flex items-center justify-center text-[8px] font-black shadow-[0_0_8px_rgba(250,204,21,0.9)]">
+                              ✓
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </div>
 
                 {/* $REAL TOKEN BALANCE GATE CARD */}
@@ -367,7 +430,11 @@ export default function Home() {
                             $REAL HOLDINGS GATE
                           </span>
                           <span className="font-bold text-white text-[11px]">
-                            {isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} / 1,000,000 $REAL`}
+                            {isCheckingBalance
+                              ? 'Fetching SPL Token Balance...'
+                              : MIN_REAL_REQUIRED > 0
+                                ? `${(realBalance ?? 0).toLocaleString()} / ${MIN_REAL_REQUIRED.toLocaleString()} $REAL`
+                                : `${(realBalance ?? 0).toLocaleString()} $REAL (No Min Required)`}
                           </span>
                         </div>
                       </div>

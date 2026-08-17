@@ -86,8 +86,8 @@ export function ConnectWalletButton() {
             }`}
             title={
               isEligible
-                ? `Holdings: ${realBalance?.toLocaleString()} $REAL (Eligible to Play & Withdraw)`
-                : `Holdings: ${realBalance !== null ? realBalance.toLocaleString() : 0} / 1,000,000 $REAL (Minimum 1M required)`
+                ? `Holdings: ${(realBalance ?? 0).toLocaleString()} $REAL (Eligible to Play)`
+                : `Holdings: ${(realBalance ?? 0).toLocaleString()} $REAL`
             }
           >
             <img src="/logo.jpeg" alt="$REAL" className="w-4 h-4 rounded-full border border-amber-400/40 object-cover" />

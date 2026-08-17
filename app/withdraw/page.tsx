@@ -251,13 +251,13 @@ export default function WithdrawPage() {
           {address && (
             <div className="space-y-3">
               <div className={`p-4 rounded-2xl border text-xs font-mono flex items-center justify-between gap-3 ${isCheckingBalance
-                  ? 'bg-purple-500/10 border-purple-500/30 text-fuchsia-300 animate-pulse'
-                  : isEligible
-                    ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
-                    : 'bg-red-500/15 border-red-500/40 text-red-300'
+                ? 'bg-purple-500/10 border-purple-500/30 text-fuchsia-300 animate-pulse'
+                : isEligible
+                  ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
+                  : 'bg-red-500/15 border-red-500/40 text-red-300'
                 }`}>
                 <div className="flex items-center gap-3">
-                  <img src="/logo.jpeg" alt="$RWD" className="w-8 h-8 rounded-full border border-fuchsia-400/40 object-cover shrink-0" />
+                  <img src="/logo.jpg" alt="$RWD" className="w-8 h-8 rounded-full border border-fuchsia-400/40 object-cover shrink-0" />
                   <div className="flex flex-col gap-0.5">
                     <span className="font-bold text-purple-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
                       $RWD TOKEN HOLDINGS REQUIREMENT
@@ -314,10 +314,10 @@ export default function WithdrawPage() {
               {/* Estimated Token Output */}
               <div className="bg-[#140b24] border border-purple-500/30 rounded-2xl p-4 space-y-2">
                 <label className="text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <img src="/logo.jpeg" alt="$RWD" className="w-4 h-4 rounded-full object-cover border border-fuchsia-400/50" /> ESTIMATED $RWD TOKENS (10 COINS = 1 TOKEN)
+                  <img src="/logo.jpg" alt="$RWD" className="w-4 h-4 rounded-full object-cover border border-fuchsia-400/50" /> ESTIMATED $RWD TOKENS (10 COINS = 1 TOKEN)
                 </label>
                 <div className="flex items-center gap-2">
-                  <img src="/logo.jpeg" alt="$RWD" className="w-6 h-6 rounded-full object-cover border border-fuchsia-400/50" />
+                  <img src="/logo.jpg" alt="$RWD" className="w-6 h-6 rounded-full object-cover border border-fuchsia-400/50" />
                   <span className="font-mono text-xl font-extrabold text-fuchsia-300 flex items-center gap-1.5">
                     {estimatedTokens.toLocaleString()} <span className="text-xs text-purple-300">$RWD</span>
                   </span>
@@ -379,12 +379,12 @@ export default function WithdrawPage() {
               type="submit"
               disabled={isSubmitting || coinsNum < 1000 || coinsNum > bankCoins || !address || !isEligible || isCheckingBalance}
               className={`w-full py-4 font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${!address
-                  ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer'
-                  : isCheckingBalance
-                    ? 'bg-purple-500/20 text-fuchsia-300 border-purple-500/40 cursor-wait animate-pulse'
-                    : isEligible
-                      ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 hover:from-purple-500 hover:to-fuchsia-400 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer'
-                      : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer'
+                : isCheckingBalance
+                  ? 'bg-purple-500/20 text-fuchsia-300 border-purple-500/40 cursor-wait animate-pulse'
+                  : isEligible
+                    ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 hover:from-purple-500 hover:to-fuchsia-400 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer'
+                    : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
                 }`}
             >
               {address && !isEligible && !isCheckingBalance && <Lock className="w-4 h-4 text-red-400 shrink-0" />}

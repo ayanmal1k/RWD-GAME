@@ -75,7 +75,7 @@ interface Platform {
   springTimer?: number; // Animation timer for spring compression
   springState?: 'idle' | 'compressed' | 'extended';
   shakeOffset?: number;
-  rockyImg?: number; // 5, 13, or 17
+  style?: 'grassy' | 'sonic_checker' | 'mario_brick' | 'cyber_girder';
 }
 
 interface Coin {
@@ -1153,6 +1153,17 @@ export class GameEngine {
 
       const vx = type === 'MOVING' ? (Math.random() > 0.5 ? 1.5 : -1.5) * (1 + (currentY / 4000)) : 0;
 
+      let style: 'grassy' | 'sonic_checker' | 'mario_brick' | 'cyber_girder' | undefined;
+      if (type === 'STANDARD') {
+        const styles: ('grassy' | 'sonic_checker' | 'mario_brick' | 'cyber_girder')[] = [
+          'grassy',
+          'sonic_checker',
+          'mario_brick',
+          'cyber_girder'
+        ];
+        style = styles[Math.floor(Math.random() * styles.length)];
+      }
+
       const platformId = this.nextPlatformId++;
       this.platforms.push({
         id: platformId,
@@ -1162,7 +1173,8 @@ export class GameEngine {
         height: 18,
         type,
         vx,
-        springState: type === 'SPRING' ? 'idle' : undefined
+        springState: type === 'SPRING' ? 'idle' : undefined,
+        style
       });
 
       // Mario Spawning (10% chance on moving pipe platforms)
@@ -2391,27 +2403,182 @@ export class GameEngine {
     // Procedural pixel arts based on platform type
     switch (platform.type) {
       case 'STANDARD':
-        // 1. Dirt base
-        this.ctx.fillStyle = '#5d4037'; // brown
-        this.ctx.fillRect(x, screenY, platform.width, platform.height);
+        const standardStyle = platform.style || 'grassy';
+        
+        if (standardStyle === 'sonic_checker') {
+          // HOMAGE 1: Sonic the Hedgehog (Green Hill Zone Checkerboard)
+          this.ctx.save();
+          this.ctx.beginPath();
+          this.ctx.rect(x, screenY, platform.width, platform.height);
+          this.ctx.clip();
 
-        // Brick dividers (random pixels)
-        this.ctx.fillStyle = '#3e2723'; // dark brown shadow
-        for (let bx = x + 16; bx < x + platform.width; bx += 32) {
-          this.ctx.fillRect(bx, screenY + 8, 2, platform.height - 8);
-        }
-        // Platform bottom shadow
-        this.ctx.fillRect(x, screenY + platform.height - 3, platform.width, 3);
+          // Alternating Caramel Brown & Dark Mocha Checkerboard
+          const squareSize = 9;
+          for (let cx = 0; cx < platform.width; cx += squareSize) {
+            for (let cy = 0; cy < platform.height; cy += squareSize) {
+              const col = Math.floor(cx / squareSize);
+              const row = Math.floor(cy / squareSize);
+              const isDark = (col + row) % 2 === 0;
+              this.ctx.fillStyle = isDark ? '#78350f' : '#b45309';
+              this.ctx.fillRect(x + cx, screenY + cy, Math.min(squareSize, platform.width - cx), Math.min(squareSize, platform.height - cy));
+            }
+          }
 
-        // 2. Mossy Grass Top Layer (6px)
-        this.ctx.fillStyle = '#2e7d32'; // dark green
-        this.ctx.fillRect(x, screenY, platform.width, 6);
+          // Golden-amber bevel divider lines
+          this.ctx.fillStyle = '#d97706';
+          for (let cx = squareSize; cx < platform.width; cx += squareSize) {
+            this.ctx.fillRect(x + cx, screenY + 4, 1, platform.height - 4);
+          }
 
-        // Hanging moss highlights
-        this.ctx.fillStyle = '#4caf50'; // bright green
-        for (let gx = x + 4; gx < x + platform.width; gx += 8) {
-          const depth = (gx % 3 === 0) ? 9 : 6;
-          this.ctx.fillRect(gx, screenY, 4, depth);
+          // Iconic Green Hill Zone Grass Top Layer (4px)
+          this.ctx.fillStyle = '#15803d'; // deep emerald grass base
+          this.ctx.fillRect(x, screenY, platform.width, 4);
+          this.ctx.fillStyle = '#22c55e'; // bright retro lime grass top
+          this.ctx.fillRect(x, screenY, platform.width, 2);
+          // Grass tuft pixels
+          this.ctx.fillStyle = '#86efac';
+          for (let tx = x + 3; tx < x + platform.width - 2; tx += 6) {
+            this.ctx.fillRect(tx, screenY + 2, 2, 2);
+          }
+
+          // Bottom drop shadow
+          this.ctx.fillStyle = '#451a03';
+          this.ctx.fillRect(x, screenY + platform.height - 3, platform.width, 3);
+          this.ctx.restore();
+
+        } else if (standardStyle === 'mario_brick') {
+          // HOMAGE 2: Super Mario Bros (Underground & Castle Brick Block)
+          this.ctx.save();
+          this.ctx.beginPath();
+          this.ctx.rect(x, screenY, platform.width, platform.height);
+          this.ctx.clip();
+
+          // Terracotta brick masonry base
+          this.ctx.fillStyle = '#9a3412';
+          this.ctx.fillRect(x, screenY, platform.width, platform.height);
+
+          // Staggered brick rows with mortar joints
+          const brickW = 18;
+          const brickH = 7;
+          this.ctx.fillStyle = '#431407'; // deep dark mortar grout
+
+          // Horizontal mortar lines
+          this.ctx.fillRect(x, screenY + brickH, platform.width, 2);
+          this.ctx.fillRect(x, screenY + brickH * 2 + 1, platform.width, 2);
+
+          // Vertical mortar lines (staggered every row)
+          for (let row = 0; row < 3; row++) {
+            const rowY = screenY + row * (brickH + 1);
+            const offset = (row % 2) * (brickW / 2);
+            for (let bx = offset; bx < platform.width; bx += brickW) {
+              this.ctx.fillRect(x + bx, rowY, 2, brickH);
+            }
+          }
+
+          // Beveled Brick Highlights (upper-left orange & light peach corner shine)
+          this.ctx.fillStyle = '#ea580c';
+          for (let row = 0; row < 3; row++) {
+            const rowY = screenY + row * (brickH + 1);
+            const offset = (row % 2) * (brickW / 2);
+            for (let bx = offset; bx < platform.width; bx += brickW) {
+              const drawW = Math.max(0, Math.min(brickW - 4, platform.width - (bx + 2)));
+              if (drawW > 0) {
+                this.ctx.fillRect(x + bx + 2, rowY + 1, drawW, 1);
+                this.ctx.fillRect(x + bx + 2, rowY + 1, 1, brickH - 2);
+              }
+            }
+          }
+
+          // Top masonry border
+          this.ctx.fillStyle = '#c2410c';
+          this.ctx.fillRect(x, screenY, platform.width, 2);
+          this.ctx.fillStyle = '#fdba74';
+          this.ctx.fillRect(x + 2, screenY, platform.width - 4, 1);
+
+          // Bottom shadow
+          this.ctx.fillStyle = '#270902';
+          this.ctx.fillRect(x, screenY + platform.height - 3, platform.width, 3);
+          this.ctx.restore();
+
+        } else if (standardStyle === 'cyber_girder') {
+          // HOMAGE 3: Mega Man & Metroid (Retro Neo-Arcade Cyber Girder)
+          this.ctx.save();
+          this.ctx.beginPath();
+          this.ctx.rect(x, screenY, platform.width, platform.height);
+          this.ctx.clip();
+
+          // Dark Cyber Frame
+          this.ctx.fillStyle = '#0f172a';
+          this.ctx.fillRect(x, screenY, platform.width, platform.height);
+
+          // Cobalt Tech Inset Plate
+          this.ctx.fillStyle = '#1e3a8a';
+          this.ctx.fillRect(x + 2, screenY + 2, platform.width - 4, platform.height - 4);
+
+          // Diagonal Cyber Cross-Trusses
+          this.ctx.fillStyle = '#1e40af';
+          for (let gx = x + 4; gx < x + platform.width - 10; gx += 20) {
+            this.ctx.beginPath();
+            this.ctx.moveTo(gx, screenY + platform.height - 3);
+            this.ctx.lineTo(gx + 12, screenY + 3);
+            this.ctx.lineTo(gx + 14, screenY + 3);
+            this.ctx.lineTo(gx + 2, screenY + platform.height - 3);
+            this.ctx.closePath();
+            this.ctx.fill();
+          }
+
+          // Center Glowing Cyan Power Conduit / Circuit Line
+          this.ctx.fillStyle = '#06b6d4';
+          this.ctx.fillRect(x + 4, screenY + 8, platform.width - 8, 2);
+          this.ctx.fillStyle = '#67e8f9';
+          this.ctx.fillRect(x + 6, screenY + 8, platform.width - 12, 1);
+
+          // Chrome Rivets on joints
+          this.ctx.fillStyle = '#e2e8f0';
+          for (let rx = x + 4; rx < x + platform.width - 4; rx += 20) {
+            this.ctx.fillRect(rx, screenY + 4, 2, 2);
+            this.ctx.fillRect(rx, screenY + platform.height - 6, 2, 2);
+          }
+
+          // Top Cyber Energy Trim
+          this.ctx.fillStyle = '#38bdf8';
+          this.ctx.fillRect(x, screenY, platform.width, 2);
+
+          // Bottom shadow
+          this.ctx.fillStyle = '#020617';
+          this.ctx.fillRect(x, screenY + platform.height - 3, platform.width, 3);
+          this.ctx.restore();
+
+        } else {
+          // HOMAGE 4: Super Mario Bros / Wonder Boy (Classic Overworld Grassy Dirt)
+          this.ctx.save();
+          this.ctx.beginPath();
+          this.ctx.rect(x, screenY, platform.width, platform.height);
+          this.ctx.clip();
+
+          // 1. Dirt base
+          this.ctx.fillStyle = '#5d4037'; // brown
+          this.ctx.fillRect(x, screenY, platform.width, platform.height);
+
+          // Brick dividers (random pixels)
+          this.ctx.fillStyle = '#3e2723'; // dark brown shadow
+          for (let bx = 16; bx < platform.width; bx += 32) {
+            this.ctx.fillRect(x + bx, screenY + 8, 2, platform.height - 8);
+          }
+          // Platform bottom shadow
+          this.ctx.fillRect(x, screenY + platform.height - 3, platform.width, 3);
+
+          // 2. Mossy Grass Top Layer (6px)
+          this.ctx.fillStyle = '#2e7d32'; // dark green
+          this.ctx.fillRect(x, screenY, platform.width, 6);
+
+          // Hanging moss highlights
+          this.ctx.fillStyle = '#4caf50'; // bright green
+          for (let gx = 4; gx < platform.width; gx += 8) {
+            const depth = (gx % 3 === 0) ? 9 : 6;
+            this.ctx.fillRect(x + gx, screenY, 4, depth);
+          }
+          this.ctx.restore();
         }
         break;
 

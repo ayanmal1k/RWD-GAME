@@ -77,20 +77,19 @@ export function ConnectWalletButton() {
         <div className="flex items-center gap-2 flex-wrap sm:flex-nowrap justify-end">
           {/* $RWD Token Balance Pill */}
           <div
-            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-xs font-mono backdrop-blur-md ${
-              isCheckingBalance
+            className={`hidden sm:flex items-center gap-1.5 px-3 py-1.5 border rounded-full text-xs font-mono backdrop-blur-md ${isCheckingBalance
                 ? 'bg-purple-500/10 border-purple-500/30 text-fuchsia-300 animate-pulse'
                 : isEligible
-                ? 'bg-purple-500/20 border-purple-500/40 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
-                : 'bg-red-500/15 border-red-500/40 text-red-300 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
-            }`}
+                  ? 'bg-purple-500/20 border-purple-500/40 text-purple-200 shadow-[0_0_12px_rgba(168,85,247,0.3)]'
+                  : 'bg-red-500/15 border-red-500/40 text-red-300 shadow-[0_0_10px_rgba(239,68,68,0.2)]'
+              }`}
             title={
               isEligible
                 ? `Holdings: ${(realBalance ?? 0).toLocaleString()} $RWD (Eligible to Play)`
                 : `Holdings: ${(realBalance ?? 0).toLocaleString()} $RWD`
             }
           >
-            <img src="/logo.jpeg" alt="$RWD" className="w-4 h-4 rounded-full border border-fuchsia-400/40 object-cover" />
+            <img src="/logo.jpg" alt="$RWD" className="w-4 h-4 rounded-full border border-fuchsia-400/40 object-cover" />
             <span className="font-bold">
               {isCheckingBalance
                 ? 'Checking...'

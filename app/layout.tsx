@@ -25,9 +25,9 @@ export const metadata: Metadata = {
   creator: 'Rewind Static',
   publisher: 'Rewind Static',
   icons: {
-    icon: '/logo.jpeg',
-    shortcut: '/logo.jpeg',
-    apple: '/logo.jpeg',
+    icon: '/logo.jpg',
+    shortcut: '/logo.jpg',
+    apple: '/logo.jpg',
   },
   openGraph: {
     title: 'Rewind Static ($RWD) — Retro Arcade Game & Solana Token Exchanger',
@@ -38,7 +38,7 @@ export const metadata: Metadata = {
     type: 'website',
     images: [
       {
-        url: '/logo.jpeg',
+        url: '/logo.jpg',
         width: 1200,
         height: 630,
         alt: 'Rewind Static ($RWD) Hero Banner',
@@ -50,7 +50,7 @@ export const metadata: Metadata = {
     title: 'Rewind Static ($RWD) — Retro Arcade Game & Solana Token Exchanger',
     description: 'Play the retro climber game, collect coins, climb the live global leaderboard, and exchange coins for $RWD Solana tokens.',
     creator: '@RewindStatic',
-    images: ['/logo.jpeg'],
+    images: ['/logo.jpg'],
   },
   robots: {
     index: true,

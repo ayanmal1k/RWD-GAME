@@ -392,20 +392,18 @@ export default function Home() {
                           key={char.id}
                           type="button"
                           onClick={() => setSelectedCharacter(char.id)}
-                          className={`relative p-1.5 sm:p-2 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center cursor-pointer group ${
-                            isSelected
+                          className={`relative p-1.5 sm:p-2 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center cursor-pointer group ${isSelected
                               ? 'bg-gradient-to-b from-purple-500/35 to-fuchsia-500/20 border-fuchsia-400 shadow-[0_0_18px_rgba(217,70,239,0.7)] scale-105 ring-2 ring-fuchsia-400/80'
                               : 'bg-[#140b24]/90 border-purple-500/25 hover:border-purple-400/60 hover:bg-purple-500/15 hover:scale-105'
-                          }`}
+                            }`}
                           title="Click to select"
                         >
                           <div className="w-11 h-11 sm:w-13 sm:h-13 relative flex items-center justify-center">
                             <img
                               src={char.idleSrc}
                               alt="Climber"
-                              className={`w-full h-full object-contain pixelated transition-transform duration-200 ${
-                                isSelected ? 'animate-breathe scale-110 drop-shadow-[0_0_8px_rgba(217,70,239,0.7)]' : 'opacity-80 group-hover:opacity-100 group-hover:scale-105'
-                              }`}
+                              className={`w-full h-full object-contain pixelated transition-transform duration-200 ${isSelected ? 'animate-breathe scale-110 drop-shadow-[0_0_8px_rgba(217,70,239,0.7)]' : 'opacity-80 group-hover:opacity-100 group-hover:scale-105'
+                                }`}
                             />
                           </div>
                           {isSelected && (
@@ -423,13 +421,13 @@ export default function Home() {
                 {primaryWallet && (
                   <div className="mb-3 w-full max-w-sm space-y-2 shrink-0">
                     <div className={`w-full p-3 rounded-2xl border text-xs font-mono text-left flex items-center justify-between gap-2 backdrop-blur-md ${isCheckingBalance
-                        ? 'bg-purple-500/10 border-purple-500/30 text-fuchsia-300 animate-pulse'
-                        : isEligible
-                          ? 'bg-purple-500/20 border-purple-500/40 text-purple-200 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
-                          : 'bg-red-500/15 border-red-500/40 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                      ? 'bg-purple-500/10 border-purple-500/30 text-fuchsia-300 animate-pulse'
+                      : isEligible
+                        ? 'bg-purple-500/20 border-purple-500/40 text-purple-200 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                        : 'bg-red-500/15 border-red-500/40 text-red-300 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
                       }`}>
                       <div className="flex items-center gap-2">
-                        <img src="/logo.jpeg" alt="$RWD" className="w-6 h-6 rounded-full border border-fuchsia-400/40 shrink-0 object-cover" />
+                        <img src="/logo.jpg" alt="$RWD" className="w-6 h-6 rounded-full border border-fuchsia-400/40 shrink-0 object-cover" />
                         <div className="flex flex-col">
                           <span className="text-[9px] font-bold uppercase tracking-wider text-purple-300/90 flex items-center gap-1">
                             $RWD HOLDINGS GATE
@@ -469,12 +467,12 @@ export default function Home() {
                     onClick={handlePlayClick}
                     disabled={!!primaryWallet && (!isEligible || isCheckingBalance)}
                     className={`w-full sm:w-auto px-5 py-3 sm:px-6 sm:py-3.5 font-bold font-press-start text-[9px] sm:text-[10px] rounded-2xl border-2 sm:border-4 transition-all flex items-center justify-center gap-1.5 leading-tight ${!primaryWallet
-                        ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer transform hover:scale-105 active:scale-95'
-                        : isCheckingBalance
-                          ? 'bg-purple-500/20 text-fuchsia-300 border-purple-500/40 cursor-wait animate-pulse'
-                          : isEligible
-                            ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer transform hover:scale-105 active:scale-95'
-                            : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                      ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer transform hover:scale-105 active:scale-95'
+                      : isCheckingBalance
+                        ? 'bg-purple-500/20 text-fuchsia-300 border-purple-500/40 cursor-wait animate-pulse'
+                        : isEligible
+                          ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer transform hover:scale-105 active:scale-95'
+                          : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
                       }`}
                   >
                     {!!primaryWallet && !isEligible && !isCheckingBalance && <Lock className="w-3.5 h-3.5 text-red-400 shrink-0" />}
@@ -590,20 +588,18 @@ export default function Home() {
                           key={char.id}
                           type="button"
                           onClick={() => setSelectedCharacter(char.id)}
-                          className={`relative p-1.5 sm:p-2 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center cursor-pointer group ${
-                            isSelected
+                          className={`relative p-1.5 sm:p-2 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center cursor-pointer group ${isSelected
                               ? 'bg-gradient-to-b from-purple-500/35 to-fuchsia-500/20 border-fuchsia-400 shadow-[0_0_18px_rgba(217,70,239,0.7)] scale-105 ring-2 ring-fuchsia-400/80'
                               : 'bg-[#140b24]/90 border-purple-500/25 hover:border-purple-400/60 hover:bg-purple-500/15 hover:scale-105'
-                          }`}
+                            }`}
                           title="Click to select"
                         >
                           <div className="w-10 h-10 sm:w-12 sm:h-12 relative flex items-center justify-center">
                             <img
                               src={char.idleSrc}
                               alt="Climber"
-                              className={`w-full h-full object-contain pixelated transition-transform duration-200 ${
-                                isSelected ? 'animate-breathe scale-110 drop-shadow-[0_0_8px_rgba(217,70,239,0.7)]' : 'opacity-80 group-hover:opacity-100 group-hover:scale-105'
-                              }`}
+                              className={`w-full h-full object-contain pixelated transition-transform duration-200 ${isSelected ? 'animate-breathe scale-110 drop-shadow-[0_0_8px_rgba(217,70,239,0.7)]' : 'opacity-80 group-hover:opacity-100 group-hover:scale-105'
+                                }`}
                             />
                           </div>
                           {isSelected && (
@@ -733,8 +729,8 @@ export default function Home() {
                           <div
                             key={player.rank}
                             className={`border rounded-xl p-2.5 sm:p-3 flex items-center justify-between text-[11px] sm:text-xs font-mono transition-all ${player.rank === 1
-                                ? 'bg-gradient-to-r from-purple-500/25 to-fuchsia-500/15 border-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.3)]'
-                                : 'bg-[#140b24]/80 border-purple-500/20'
+                              ? 'bg-gradient-to-r from-purple-500/25 to-fuchsia-500/15 border-fuchsia-400 shadow-[0_0_15px_rgba(217,70,239,0.3)]'
+                              : 'bg-[#140b24]/80 border-purple-500/20'
                               }`}
                           >
                             <div className="flex items-center gap-2 sm:gap-3 min-w-0">
@@ -813,27 +809,27 @@ export default function Home() {
         </div>
       </div>
 
-      {/* Controls & Gameplay Instructions below canvas */}
+      {/* Controls, Points & Gameplay Guide below canvas */}
       {!isFullscreen && (
-        <div className="flex flex-col items-center px-4 sm:px-8 pb-8">
-          <div className="w-full max-w-xl flex flex-col items-center gap-4 z-10">
+        <div className="flex flex-col items-center px-4 sm:px-8 pb-10">
+          <div className="w-full max-w-2xl flex flex-col items-center gap-5 z-10">
 
-            {/* Game Controls Card */}
-            <section className="w-full bg-[#120722]/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-purple-500/30 flex flex-col gap-3 font-mono text-purple-200/80 text-xs">
+            {/* 1. Game Controls Card */}
+            <section className="w-full bg-[#120722]/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-2xl border border-purple-500/30 flex flex-col gap-3.5 font-mono text-purple-200/80 text-xs">
               <div className="flex items-center justify-between border-b border-purple-500/20 pb-2.5">
-                <h3 className="text-[10px] font-bold font-press-start text-fuchsia-300 uppercase tracking-wider flex items-center gap-2">
-                  <CoinIcon className="w-4 h-4" /> GAME CONTROLS & INSTRUCTIONS
+                <h3 className="text-[11px] font-bold font-press-start text-fuchsia-300 uppercase tracking-wider flex items-center gap-2">
+                  <CoinIcon className="w-4 h-4" /> CONTROLS & SHORTCUTS
                 </h3>
-                <span className="text-[9px] font-mono text-purple-300 font-bold bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/25">Arcade Mode</span>
+                <span className="text-[9px] font-mono text-purple-300 font-bold bg-purple-500/15 px-2 py-0.5 rounded border border-purple-500/25">Desktop & Mobile</span>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
                 <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-purple-500/15 sm:col-span-2">
                   <span className="text-[11px] font-bold text-purple-200">Move Left / Right</span>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 items-center">
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[10px]">A</kbd>
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[10px]">D</kbd>
-                    <span className="text-[9px] text-purple-400/60 self-center mx-1">or</span>
+                    <span className="text-[9px] text-purple-400/60 mx-1">or</span>
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[10px]">◀</kbd>
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[10px]">▶</kbd>
                   </div>
@@ -841,7 +837,7 @@ export default function Home() {
 
                 <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-purple-500/15">
                   <span className="text-[11px] font-bold text-purple-200">Jump</span>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 items-center">
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[10px]">W</kbd>
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[10px]">▲</kbd>
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[8px]">SPACE</kbd>
@@ -853,70 +849,229 @@ export default function Home() {
                     <span className="text-[11px] font-bold text-purple-200">Super Jump</span>
                     <span className="text-[9px] text-fuchsia-400 font-bold">(20 Coins)</span>
                   </div>
-                  <div className="flex gap-1">
+                  <div className="flex gap-1 items-center">
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[8px]">SHIFT</kbd>
-                    <span className="text-[9px] text-purple-400/60 self-center">+</span>
+                    <span className="text-[9px] text-purple-400/60">+</span>
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[8px]">SPACE</kbd>
                   </div>
                 </div>
               </div>
 
-              {/* Power-up Tips & Mechanics */}
-              <div className="mt-1 pt-2.5 border-t border-purple-500/15 grid grid-cols-2 gap-2 text-[10px]">
+              {/* In-game tips */}
+              <div className="pt-2 border-t border-purple-500/15 grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px]">
                 <div className="flex items-center gap-2 bg-[#07030e]/60 p-2 rounded-lg border border-purple-500/10">
-                  <CoinIcon className="w-4 h-4" />
-                  <span>Collect coins to build your Treasury Bank!</span>
+                  <CoinIcon className="w-4 h-4 shrink-0" />
+                  <span>Coins accumulate in your Treasury Bank for token withdrawal!</span>
                 </div>
                 <div className="flex items-center gap-2 bg-[#07030e]/60 p-2 rounded-lg border border-purple-500/10">
-                  <span className="text-fuchsia-400 font-bold text-xs">🚀 Springs</span>
-                  <span>Bounce high on green spring platforms!</span>
+                  <span className="text-fuchsia-400 font-bold text-xs shrink-0">🚀 Super Jump</span>
+                  <span>Spend 20 coins for a 1.6x massive upward vault!</span>
                 </div>
               </div>
             </section>
 
-            {/* Mechanics & Platforms Guide */}
-            <section className="w-full bg-[#120722]/95 backdrop-blur-md rounded-2xl p-4 shadow-xl border border-purple-500/30 flex flex-col gap-3 font-mono text-purple-200/80 text-xs">
-              <h3 className="text-[10px] font-bold font-press-start text-fuchsia-300 uppercase tracking-wider text-center border-b border-purple-500/20 pb-2">
-                PLATFORMS & COLLECTIBLES
-              </h3>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs font-mono">
-                <div className="flex items-center gap-2.5 bg-[#07030e] p-2.5 rounded-xl border border-purple-500/15">
-                  <span className="text-fuchsia-400 font-bold text-sm">🏞️</span>
-                  <div className="min-w-0">
-                    <span className="text-purple-200 font-bold text-[10px] block">Standard Ledge</span>
-                    <p className="text-[9px] text-purple-300/60 leading-tight">Rocky mountain platform. Safe to land on.</p>
+            {/* 2. Cartoon Characters & Points Guide */}
+            <section className="w-full bg-[#120722]/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-2xl border border-purple-500/30 flex flex-col gap-3.5 font-mono text-purple-200/80 text-xs">
+              <div className="flex items-center justify-between border-b border-purple-500/20 pb-2.5">
+                <h3 className="text-[11px] font-bold font-press-start text-fuchsia-300 uppercase tracking-wider flex items-center gap-2">
+                  ⭐ CARTOON BONUSES & POINTS
+                </h3>
+                <span className="text-[9px] font-mono text-amber-300 font-bold bg-amber-500/15 px-2 py-0.5 rounded border border-amber-500/25">Exclusive Spawns</span>
+              </div>
+
+              <p className="text-[10px] text-purple-300/70 leading-relaxed">
+                Touch cartoon characters on platforms to trigger celebratory animations, retro chimes, and instant score boosts:
+              </p>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Sonic */}
+                <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-sky-500/20">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-lg bg-black/60 border border-sky-500/30 overflow-hidden flex items-center justify-start shrink-0">
+                      <img
+                        src="/cartoons/sonic/sonic_wait.png"
+                        alt="Sonic"
+                        className="h-full max-w-none [image-rendering:pixelated]"
+                        style={{ width: '200%', objectFit: 'cover', objectPosition: 'left' }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-sky-300 font-bold text-[11px] block">Sonic the Hedgehog</span>
+                      <span className="text-[9px] text-purple-300/60">5% chance (Standard Platforms)</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 bg-sky-500/20 border border-sky-500/40 rounded-lg text-sky-300 font-bold text-[10px] font-press-start">+100</span>
+                </div>
+
+                {/* Mario */}
+                <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-red-500/20">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-lg bg-black/60 border border-red-500/30 overflow-hidden flex items-center justify-start shrink-0">
+                      <img
+                        src="/cartoons/mario/waiting_mario.png"
+                        alt="Mario"
+                        className="h-full max-w-none [image-rendering:pixelated]"
+                        style={{ width: '200%', objectFit: 'cover', objectPosition: 'left' }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-red-300 font-bold text-[11px] block">Super Mario</span>
+                      <span className="text-[9px] text-purple-300/60">10% chance (Moving Pipes)</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 bg-red-500/20 border border-red-500/40 rounded-lg text-red-300 font-bold text-[10px] font-press-start">+100</span>
+                </div>
+
+                {/* Dexter */}
+                <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-indigo-500/20">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-lg bg-black/60 border border-indigo-500/30 overflow-hidden flex items-center justify-start shrink-0">
+                      <img
+                        src="/cartoons/dexter/dexter_wait.png"
+                        alt="Dexter"
+                        className="h-full max-w-none [image-rendering:pixelated]"
+                        style={{ width: '300%', objectFit: 'cover', objectPosition: 'left' }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-indigo-300 font-bold text-[11px] block">Dexter's Laboratory</span>
+                      <span className="text-[9px] text-purple-300/60">5% chance (Standard Platforms)</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 bg-indigo-500/20 border border-indigo-500/40 rounded-lg text-indigo-300 font-bold text-[10px] font-press-start">+200</span>
+                </div>
+
+                {/* Tom & Jerry */}
+                <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-blue-500/20">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-lg bg-black/60 border border-blue-500/30 overflow-hidden flex items-center justify-start shrink-0">
+                      <img
+                        src="/cartoons/tom and jerry/wait_tnj.png"
+                        alt="Tom & Jerry"
+                        className="h-full max-w-none [image-rendering:pixelated]"
+                        style={{ width: '200%', objectFit: 'cover', objectPosition: 'left' }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-blue-300 font-bold text-[11px] block">Tom & Jerry</span>
+                      <span className="text-[9px] text-purple-300/60">5% chance (Standard Platforms)</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 bg-blue-500/20 border border-blue-500/40 rounded-lg text-blue-300 font-bold text-[10px] font-press-start">+200</span>
+                </div>
+
+                {/* Aaahh Real Monsters */}
+                <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-purple-500/20">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-lg bg-black/60 border border-purple-500/30 overflow-hidden flex items-center justify-start shrink-0">
+                      <img
+                        src="/cartoons/Ahh monsters/waitt monsters.png"
+                        alt="Aaahh Real Monsters"
+                        className="h-full max-w-none [image-rendering:pixelated]"
+                        style={{ width: '200%', objectFit: 'cover', objectPosition: 'left' }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-purple-300 font-bold text-[11px] block">Aaahh!!! Real Monsters</span>
+                      <span className="text-[9px] text-purple-300/60">5% chance (Standard Platforms)</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 bg-purple-500/20 border border-purple-500/40 rounded-lg text-purple-300 font-bold text-[10px] font-press-start">+300</span>
+                </div>
+
+                {/* Rugrats */}
+                <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-amber-500/20">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-9 h-9 rounded-lg bg-black/60 border border-amber-500/30 overflow-hidden flex items-center justify-start shrink-0">
+                      <img
+                        src="/cartoons/rugrats/rugrats_wait.png"
+                        alt="Rugrats"
+                        className="h-full max-w-none [image-rendering:pixelated]"
+                        style={{ width: '200%', objectFit: 'cover', objectPosition: 'left' }}
+                      />
+                    </div>
+                    <div>
+                      <span className="text-amber-300 font-bold text-[11px] block">Rugrats</span>
+                      <span className="text-[9px] text-purple-300/60">3% Rare Spawn (Standard Platforms)</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 bg-amber-500/20 border border-amber-500/40 rounded-lg text-amber-300 font-bold text-[10px] font-press-start">+400</span>
+                </div>
+
+                {/* Spinning Gold Coin */}
+                <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-yellow-500/20 sm:col-span-2">
+                  <div className="flex items-center gap-2.5">
+                    <CoinIcon className="w-6 h-6 shrink-0" />
+                    <div>
+                      <span className="text-yellow-300 font-bold text-[11px] block">Spinning Gold Coin</span>
+                      <span className="text-[9px] text-purple-300/60">+50 Score & deposits 1 coin to Treasury Bank</span>
+                    </div>
+                  </div>
+                  <span className="px-2 py-1 bg-yellow-500/20 border border-yellow-500/40 rounded-lg text-yellow-300 font-bold text-[10px] font-press-start">+50</span>
+                </div>
+              </div>
+            </section>
+
+            {/* 3. Platform Types & Mechanics Guide */}
+            <section className="w-full bg-[#120722]/95 backdrop-blur-md rounded-2xl p-4 sm:p-5 shadow-2xl border border-purple-500/30 flex flex-col gap-3.5 font-mono text-purple-200/80 text-xs">
+              <div className="flex items-center justify-between border-b border-purple-500/20 pb-2.5">
+                <h3 className="text-[11px] font-bold font-press-start text-fuchsia-300 uppercase tracking-wider flex items-center gap-2">
+                  🕹️ PLATFORMS & ENVIRONMENT
+                </h3>
+                <span className="text-[9px] font-mono text-green-300 font-bold bg-green-500/15 px-2 py-0.5 rounded border border-green-500/25">Interactive Elements</span>
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+                {/* Standard Platform Variations */}
+                <div className="bg-[#07030e] p-3 rounded-xl border border-purple-500/15 sm:col-span-2 flex flex-col gap-2">
+                  <div className="flex items-center justify-between">
+                    <span className="text-fuchsia-300 font-bold text-[11px]">🧱 Static Platforms (4 Styles)</span>
+                    <span className="text-[9px] text-purple-400 bg-purple-500/10 px-2 py-0.5 rounded border border-purple-500/20">Randomized</span>
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-[10px] text-purple-300/70 pt-1">
+                    <div className="flex items-center gap-2">
+                      <span className="text-emerald-400 font-bold">🌿 Overworld Grass:</span>
+                      <span>Mossy grass & dirt</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-amber-400 font-bold">🏁 Checkerboard:</span>
+                      <span>Caramel soil & neon lawn</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-orange-400 font-bold">🧱 Castle Brick:</span>
+                      <span>Terracotta staggered masonry</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-cyan-400 font-bold">⚡ Cyber Girder:</span>
+                      <span>Cobalt chassis & cyan conduits</span>
+                    </div>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 bg-[#07030e] p-2.5 rounded-xl border border-purple-500/15">
-                  <span className="text-purple-400 font-bold text-sm">🪵</span>
+                {/* Moving Pipe Platform */}
+                <div className="flex items-start gap-2.5 bg-[#07030e] p-2.5 rounded-xl border border-green-500/20">
+                  <span className="text-xl shrink-0">🟢</span>
                   <div className="min-w-0">
-                    <span className="text-purple-300 font-bold text-[10px] block">Moving Log</span>
-                    <p className="text-[9px] text-purple-300/60 leading-tight">Floating fallen tree log. Slides side to side.</p>
+                    <span className="text-green-300 font-bold text-[11px] block">Warp Pipe (Moving)</span>
+                    <p className="text-[9px] text-purple-300/60 leading-tight mt-0.5">Slides smoothly side to side. 10% chance to host Mario!</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 bg-[#07030e] p-2.5 rounded-xl border border-purple-500/15">
-                  <span className="text-red-400 font-bold text-sm">⚠️</span>
+                {/* Crumbling Platform */}
+                <div className="flex items-start gap-2.5 bg-[#07030e] p-2.5 rounded-xl border border-amber-500/20">
+                  <span className="text-xl shrink-0">⚠️</span>
                   <div className="min-w-0">
-                    <span className="text-red-400 font-bold text-[10px] block">Loose Rock</span>
-                    <p className="text-[9px] text-purple-300/60 leading-tight">Crumbling cliff edge. Breaks when landed on!</p>
+                    <span className="text-amber-300 font-bold text-[11px] block">Crumbling Stone</span>
+                    <p className="text-[9px] text-purple-300/60 leading-tight mt-0.5">Cracked sandstone ledge. Crumbles & breaks 500ms after landing!</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-2.5 bg-[#07030e] p-2.5 rounded-xl border border-purple-500/15">
-                  <span className="text-fuchsia-400 font-bold text-sm">🚀</span>
+                {/* Spring Pad Platform */}
+                <div className="flex items-start gap-2.5 bg-[#07030e] p-2.5 rounded-xl border border-fuchsia-500/20 sm:col-span-2">
+                  <span className="text-xl shrink-0">🚀</span>
                   <div className="min-w-0">
-                    <span className="text-purple-200 font-bold text-[10px] block">Spring Pad</span>
-                    <p className="text-[9px] text-purple-300/60 leading-tight">Super trampoline moss. Launches you skyward!</p>
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2.5 bg-[#07030e] p-2.5 rounded-xl border border-purple-500/15 sm:col-span-2">
-                  <CoinIcon className="w-5 h-5" />
-                  <div className="min-w-0">
-                    <span className="text-fuchsia-300 font-bold text-[10px] block">Spinning Gold Coin</span>
-                    <p className="text-[9px] text-purple-300/60 leading-tight">+50 score points & deposits 1 coin into your Treasury Bank for token payouts!</p>
+                    <span className="text-fuchsia-300 font-bold text-[11px] block">Retro Arcade Booster Spring Pad</span>
+                    <p className="text-[9px] text-purple-300/60 leading-tight mt-0.5">Hazard-striped industrial chassis with 3-stage animated steel coils that launch your character high into the sky!</p>
                   </div>
                 </div>
               </div>

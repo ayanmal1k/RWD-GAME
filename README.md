@@ -1,6 +1,6 @@
 # 🧗 Rewind Static ($RWD) — Web3 Retro Arcade Game & Solana Token Exchanger
 
-![Rewind Static Banner](/logo.jpeg)
+![Rewind Static Banner](/logo.jpg)
 
 [![Solana](https://img.shields.io/badge/Solana-Mainnet-00FFA3?style=for-the-badge&logo=solana)](https://solana.com)
 [![Next.js](https://img.shields.io/badge/Next.js-16.2-black?style=for-the-badge&logo=next.js)](https://nextjs.org)

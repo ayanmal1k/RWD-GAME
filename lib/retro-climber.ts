@@ -141,6 +141,32 @@ interface SonicNpc {
   frameTimer: number;
 }
 
+interface DexterNpc {
+  id: number;
+  platformId: number;
+  xOffset: number;
+  y: number;
+  width: number;
+  height: number;
+  touched: boolean;
+  state: 'waiting' | 'celebrating';
+  frame: number;
+  frameTimer: number;
+}
+
+interface RugratsNpc {
+  id: number;
+  platformId: number;
+  xOffset: number;
+  y: number;
+  width: number;
+  height: number;
+  touched: boolean;
+  state: 'waiting' | 'celebrating';
+  frame: number;
+  frameTimer: number;
+}
+
 interface Particle {
   x: number;
   y: number;
@@ -345,6 +371,56 @@ class SoundSystem {
     osc.stop(time + notes.length * 0.04 + 0.16);
   }
 
+  public playDexter() {
+    this.initCtx();
+    if (this.isMuted || !this.ctx) return;
+
+    const time = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'square';
+    // Dexter quirky genius lab chime: D5, F#5, A5, C#6, D6
+    const notes = [587.33, 739.99, 880.00, 1108.73, 1174.66];
+    notes.forEach((freq, idx) => {
+      osc.frequency.setValueAtTime(freq, time + idx * 0.05);
+    });
+
+    gain.gain.setValueAtTime(0.12, time);
+    gain.gain.linearRampToValueAtTime(0.01, time + notes.length * 0.05 + 0.14);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(time);
+    osc.stop(time + notes.length * 0.05 + 0.14);
+  }
+
+  public playRugrats() {
+    this.initCtx();
+    if (this.isMuted || !this.ctx) return;
+
+    const time = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'triangle';
+    // Cheerful, bouncy 90s baby cartoon melody: C5, E5, G5, A5, C6
+    const notes = [523.25, 659.25, 783.99, 880.00, 1046.50];
+    notes.forEach((freq, idx) => {
+      osc.frequency.setValueAtTime(freq, time + idx * 0.06);
+    });
+
+    gain.gain.setValueAtTime(0.15, time);
+    gain.gain.linearRampToValueAtTime(0.01, time + notes.length * 0.06 + 0.15);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(time);
+    osc.stop(time + notes.length * 0.06 + 0.15);
+  }
+
   public playSpring() {
     this.initCtx();
     if (this.isMuted || !this.ctx) return;
@@ -511,6 +587,10 @@ export class GameEngine {
   private ahhMonsterCelebrateImg = new Image();
   private sonicWaitingImg = new Image();
   private sonicCelebrateImg = new Image();
+  private dexterWaitingImg = new Image();
+  private dexterCelebrateImg = new Image();
+  private rugratsWaitingImg = new Image();
+  private rugratsCelebrateImg = new Image();
   private assetsLoaded = false;
 
   public setCharacter(id: CharacterId) {
@@ -572,6 +652,8 @@ export class GameEngine {
   private tomJerryNpcs: TomJerryNpc[] = [];
   private ahhMonsters: AhhMonsterNpc[] = [];
   private sonics: SonicNpc[] = [];
+  private dexters: DexterNpc[] = [];
+  private rugrats: RugratsNpc[] = [];
   private particles: Particle[] = [];
 
   // Inputs
@@ -600,7 +682,7 @@ export class GameEngine {
 
   private loadAssets() {
     const charEntries = Object.entries(CHARACTERS) as [CharacterId, CharacterConfig][];
-    const totalAssets = charEntries.length * 3 + 19;
+    const totalAssets = charEntries.length * 3 + 23;
     let loaded = 0;
 
     const onAssetLoad = () => {
@@ -617,8 +699,8 @@ export class GameEngine {
       console.warn(`Asset failed to load: ${src}. Generating pixelated fallback.`);
       // Create colored dummy image
       const canvas = document.createElement('canvas');
-      const isSpriteSheet = name.startsWith('walk') || name === 'coin' || name.startsWith('mario') || name.startsWith('tnj') || name.startsWith('ahh') || name.startsWith('sonic');
-      canvas.width = isSpriteSheet ? (name.startsWith('mario') || name === 'tnj-waiting' || name === 'ahh-waiting' || name === 'sonic-waiting' ? 512 : (name === 'tnj-celebrate' || name === 'ahh-celebrate' || name === 'sonic-celebrate') ? 768 : 1536) : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 937;
+      const isSpriteSheet = name.startsWith('walk') || name === 'coin' || name.startsWith('mario') || name.startsWith('tnj') || name.startsWith('ahh') || name.startsWith('sonic') || name.startsWith('dexter') || name.startsWith('rugrats');
+      canvas.width = isSpriteSheet ? (name.startsWith('mario') || name === 'tnj-waiting' || name === 'ahh-waiting' || name === 'sonic-waiting' || name === 'dexter-celebrate' || name.startsWith('rugrats') ? 512 : (name === 'tnj-celebrate' || name === 'ahh-celebrate' || name === 'sonic-celebrate' || name === 'dexter-waiting') ? 768 : 1536) : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 937;
       canvas.height = isSpriteSheet ? 256 : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 1678;
       const ctx = canvas.getContext('2d')!;
       
@@ -690,6 +772,24 @@ export class GameEngine {
           ctx.fillStyle = '#38bdf8';
           ctx.fillRect(i * 256 + 96, 96, 64, 64);
         }
+      } else if (name.startsWith('dexter')) {
+        // Draw 3 frames for waiting (768px), 2 frames for celebrate (570px)
+        const frameCount = name === 'dexter-celebrate' ? 2 : 3;
+        for (let i = 0; i < frameCount; i++) {
+          ctx.fillStyle = fallbackColor;
+          ctx.fillRect(i * 256 + 64, 64, 128, 128);
+          ctx.fillStyle = '#6366f1';
+          ctx.fillRect(i * 256 + 96, 96, 64, 64);
+        }
+      } else if (name.startsWith('rugrats')) {
+        // Draw 2 frames for waiting (512px), 2 frames for celebrate (512px)
+        const frameCount = 2;
+        for (let i = 0; i < frameCount; i++) {
+          ctx.fillStyle = fallbackColor;
+          ctx.fillRect(i * 256 + 64, 64, 128, 128);
+          ctx.fillStyle = '#f59e0b';
+          ctx.fillRect(i * 256 + 96, 96, 64, 64);
+        }
       } else {
         // Backgrounds
         ctx.fillStyle = fallbackColor;
@@ -732,6 +832,10 @@ export class GameEngine {
         else if (name === 'ahh-celebrate') this.ahhMonsterCelebrateImg = img;
         else if (name === 'sonic-waiting') this.sonicWaitingImg = img;
         else if (name === 'sonic-celebrate') this.sonicCelebrateImg = img;
+        else if (name === 'dexter-waiting') this.dexterWaitingImg = img;
+        else if (name === 'dexter-celebrate') this.dexterCelebrateImg = img;
+        else if (name === 'rugrats-waiting') this.rugratsWaitingImg = img;
+        else if (name === 'rugrats-celebrate') this.rugratsCelebrateImg = img;
         onAssetLoad();
       };
     };
@@ -840,6 +944,24 @@ export class GameEngine {
     this.sonicCelebrateImg.src = '/cartoons/sonic/sonic_celebrate.png';
     this.sonicCelebrateImg.onload = onAssetLoad;
     this.sonicCelebrateImg.onerror = () => handleLoadError('sonic-celebrate', '#2563eb', '/cartoons/sonic/sonic_celebrate.png');
+
+    // Load Dexter Sprites
+    this.dexterWaitingImg.src = '/cartoons/dexter/dexter_wait.png';
+    this.dexterWaitingImg.onload = onAssetLoad;
+    this.dexterWaitingImg.onerror = () => handleLoadError('dexter-waiting', '#6366f1', '/cartoons/dexter/dexter_wait.png');
+
+    this.dexterCelebrateImg.src = '/cartoons/dexter/dexter_celebrate.png';
+    this.dexterCelebrateImg.onload = onAssetLoad;
+    this.dexterCelebrateImg.onerror = () => handleLoadError('dexter-celebrate', '#6366f1', '/cartoons/dexter/dexter_celebrate.png');
+
+    // Load Rugrats Sprites (2 frames wait, 2 frames celebrate)
+    this.rugratsWaitingImg.src = '/cartoons/rugrats/rugrats_wait.png';
+    this.rugratsWaitingImg.onload = onAssetLoad;
+    this.rugratsWaitingImg.onerror = () => handleLoadError('rugrats-waiting', '#f59e0b', '/cartoons/rugrats/rugrats_wait.png');
+
+    this.rugratsCelebrateImg.src = '/cartoons/rugrats/rugrats_celebrate.png';
+    this.rugratsCelebrateImg.onload = onAssetLoad;
+    this.rugratsCelebrateImg.onerror = () => handleLoadError('rugrats-celebrate', '#f59e0b', '/cartoons/rugrats/rugrats_celebrate.png');
   }
 
   private initInputs() {
@@ -966,6 +1088,8 @@ export class GameEngine {
     this.tomJerryNpcs = [];
     this.ahhMonsters = [];
     this.sonics = [];
+    this.dexters = [];
+    this.rugrats = [];
     this.particles = [];
 
     // 1. Bottom Starting Ground Platform (spanning entire canvas width)
@@ -1118,6 +1242,38 @@ export class GameEngine {
             frame: 0,
             frameTimer: Math.random() * 2
           });
+        } else if (roll < 0.20) {
+          // Dexter (5% chance, 3-frame wait, 2-frame celebrate)
+          hasNpc = true;
+          const dexterSize = 56;
+          this.dexters.push({
+            id: this.nextPlatformId++,
+            platformId: platformId,
+            xOffset: Math.max(0, (width - dexterSize) / 2),
+            y: currentY + dexterSize,
+            width: dexterSize,
+            height: dexterSize,
+            touched: false,
+            state: 'waiting',
+            frame: 0,
+            frameTimer: Math.random() * 3
+          });
+        } else if (roll < 0.23) {
+          // Rugrats (3% chance, 2-frame wait, 2-frame celebrate)
+          hasNpc = true;
+          const rugratsSize = 56;
+          this.rugrats.push({
+            id: this.nextPlatformId++,
+            platformId: platformId,
+            xOffset: Math.max(0, (width - rugratsSize) / 2),
+            y: currentY + rugratsSize,
+            width: rugratsSize,
+            height: rugratsSize,
+            touched: false,
+            state: 'waiting',
+            frame: 0,
+            frameTimer: Math.random() * 2
+          });
         }
       }
 
@@ -1234,6 +1390,8 @@ export class GameEngine {
     this.tomJerryNpcs = this.tomJerryNpcs.filter((t) => t.y >= cleanupLimit);
     this.ahhMonsters = this.ahhMonsters.filter((a) => a.y >= cleanupLimit);
     this.sonics = this.sonics.filter((s) => s.y >= cleanupLimit);
+    this.dexters = this.dexters.filter((d) => d.y >= cleanupLimit);
+    this.rugrats = this.rugrats.filter((r) => r.y >= cleanupLimit);
 
     // Update remaining platforms
     this.platforms.forEach((platform) => {
@@ -1476,6 +1634,78 @@ export class GameEngine {
       }
     });
 
+    // 6.f Dexter interaction & animation loops (3-frame wait, 2-frame celebrate)
+    this.dexters.forEach((dexter) => {
+      const platform = this.platforms.find((p) => p.id === dexter.platformId);
+      if (platform && platform.crumbled) return;
+
+      const shake = platform?.shakeOffset || 0;
+      const dexterX = platform ? platform.x + shake + dexter.xOffset : dexter.xOffset;
+      dexter.y = platform ? platform.y + dexter.height : dexter.y;
+
+      // Animation: waiting (3 frames), celebrating (2 frames)
+      const maxFrames = dexter.state === 'celebrating' ? 2 : 3;
+      dexter.frameTimer += (dexter.state === 'celebrating' ? 0.12 : 0.08);
+      dexter.frame = Math.floor(dexter.frameTimer) % maxFrames;
+
+      if (!dexter.touched) {
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y - this.player.height / 2;
+        const dexterCenterX = dexterX + dexter.width / 2;
+        const dexterCenterY = dexter.y - dexter.height / 2;
+        const distance = Math.hypot(playerCenterX - dexterCenterX, playerCenterY - dexterCenterY);
+
+        const overlapX = this.player.x + this.player.width >= dexterX && this.player.x <= dexterX + dexter.width;
+        const overlapY = this.player.y >= dexter.y - dexter.height && this.player.y - this.player.height <= dexter.y;
+
+        if (distance < 48 || (overlapX && overlapY)) {
+          dexter.touched = true;
+          dexter.state = 'celebrating';
+          dexter.frameTimer = 0;
+          this.score += 200; // Award 200 bonus points on touch
+          this.callbacks.onScoreChange(this.score);
+          this.audio.playDexter();
+          this.triggerDexterSparks(dexterCenterX, dexterCenterY);
+        }
+      }
+    });
+
+    // 6.g Rugrats interaction & animation loops (2-frame wait, 2-frame celebrate)
+    this.rugrats.forEach((rugrat) => {
+      const platform = this.platforms.find((p) => p.id === rugrat.platformId);
+      if (platform && platform.crumbled) return;
+
+      const shake = platform?.shakeOffset || 0;
+      const rugratX = platform ? platform.x + shake + rugrat.xOffset : rugrat.xOffset;
+      rugrat.y = platform ? platform.y + rugrat.height : rugrat.y;
+
+      // Animation: waiting (2 frames), celebrating (2 frames)
+      const maxFrames = 2;
+      rugrat.frameTimer += (rugrat.state === 'celebrating' ? 0.12 : 0.08);
+      rugrat.frame = Math.floor(rugrat.frameTimer) % maxFrames;
+
+      if (!rugrat.touched) {
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y - this.player.height / 2;
+        const rugratCenterX = rugratX + rugrat.width / 2;
+        const rugratCenterY = rugrat.y - rugrat.height / 2;
+        const distance = Math.hypot(playerCenterX - rugratCenterX, playerCenterY - rugratCenterY);
+
+        const overlapX = this.player.x + this.player.width >= rugratX && this.player.x <= rugratX + rugrat.width;
+        const overlapY = this.player.y >= rugrat.y - rugrat.height && this.player.y - this.player.height <= rugrat.y;
+
+        if (distance < 48 || (overlapX && overlapY)) {
+          rugrat.touched = true;
+          rugrat.state = 'celebrating';
+          rugrat.frameTimer = 0;
+          this.score += 400; // Award 400 bonus points on touch
+          this.callbacks.onScoreChange(this.score);
+          this.audio.playRugrats();
+          this.triggerRugratsSparks(rugratCenterX, rugratCenterY);
+        }
+      }
+    });
+
     // 7. Particles update
     this.particles.forEach((p) => {
       p.x += p.vx;
@@ -1666,6 +1896,74 @@ export class GameEngine {
     }
   }
 
+  private triggerDexterSparks(x: number, y: number) {
+    // Floating score text (+200)
+    this.particles.push({
+      x: x - 24,
+      y: y + 20,
+      vx: 0,
+      vy: 1.2,
+      size: 14,
+      color: '#a855f7',
+      alpha: 1,
+      life: 45,
+      maxLife: 45,
+      text: '+200'
+    });
+
+    // Dexter celebratory purple / indigo / cyan / electric yellow sparks
+    for (let i = 0; i < 26; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.2 + Math.random() * 4.2;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 5,
+        color: ['#6366f1', '#a855f7', '#06b6d4', '#eab308', '#ffffff'][Math.floor(Math.random() * 5)],
+        alpha: 1,
+        life: 25 + Math.random() * 15,
+        maxLife: 40,
+        gravity: true
+      });
+    }
+  }
+
+  private triggerRugratsSparks(x: number, y: number) {
+    // Floating score text (+400)
+    this.particles.push({
+      x: x - 24,
+      y: y + 20,
+      vx: 0,
+      vy: 1.2,
+      size: 14,
+      color: '#f59e0b',
+      alpha: 1,
+      life: 45,
+      maxLife: 45,
+      text: '+400'
+    });
+
+    // Rugrats celebratory gold / amber / cyan / pastel pink / white sparks
+    for (let i = 0; i < 26; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.2 + Math.random() * 4.2;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 5,
+        color: ['#f59e0b', '#fbbf24', '#06b6d4', '#ec4899', '#ffffff'][Math.floor(Math.random() * 5)],
+        alpha: 1,
+        life: 25 + Math.random() * 15,
+        maxLife: 40,
+        gravity: true
+      });
+    }
+  }
+
   private triggerCoinSparks(x: number, y: number) {
     for (let i = 0; i < 15; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -1769,6 +2067,8 @@ export class GameEngine {
     this.tomJerryNpcs.forEach((tnj) => this.drawTomJerry(tnj));
     this.ahhMonsters.forEach((ahh) => this.drawAhhMonster(ahh));
     this.sonics.forEach((sonic) => this.drawSonic(sonic));
+    this.dexters.forEach((dexter) => this.drawDexter(dexter));
+    this.rugrats.forEach((rugrat) => this.drawRugrats(rugrat));
     this.drawParticles();
 
     // C. Draw Player Character
@@ -2006,6 +2306,70 @@ export class GameEngine {
     } else {
       this.ctx.fillStyle = '#2563eb';
       this.ctx.fillRect(sonicX, screenY, sonic.width, sonic.height);
+    }
+  }
+
+  // Draw Dexter NPC (waiting: 3 frames, celebrating: 2 frames)
+  private drawDexter(dexter: DexterNpc) {
+    const platform = this.platforms.find((p) => p.id === dexter.platformId);
+    if (platform && platform.crumbled) return;
+
+    const shake = platform?.shakeOffset || 0;
+    const dexterX = platform ? platform.x + shake + dexter.xOffset : dexter.xOffset;
+    const screenY = this.canvas.height - (dexter.y - this.cameraY);
+
+    if (this.assetsLoaded) {
+      const img = dexter.state === 'celebrating' ? this.dexterCelebrateImg : this.dexterWaitingImg;
+      if (img && img.complete && img.naturalWidth > 0) {
+        const frameCount = dexter.state === 'celebrating' ? 2 : 3;
+        const frameWidth = img.naturalWidth / frameCount;
+        const frameHeight = img.naturalHeight;
+        const sx = dexter.frame * frameWidth;
+
+        this.ctx.drawImage(
+          img,
+          sx, 0, frameWidth, frameHeight,
+          dexterX, screenY, dexter.width, dexter.height
+        );
+      } else {
+        this.ctx.fillStyle = dexter.state === 'celebrating' ? '#a855f7' : '#6366f1';
+        this.ctx.fillRect(dexterX, screenY, dexter.width, dexter.height);
+      }
+    } else {
+      this.ctx.fillStyle = '#6366f1';
+      this.ctx.fillRect(dexterX, screenY, dexter.width, dexter.height);
+    }
+  }
+
+  // Draw Rugrats NPC (waiting: 2 frames, celebrating: 2 frames)
+  private drawRugrats(rugrat: RugratsNpc) {
+    const platform = this.platforms.find((p) => p.id === rugrat.platformId);
+    if (platform && platform.crumbled) return;
+
+    const shake = platform?.shakeOffset || 0;
+    const rugratX = platform ? platform.x + shake + rugrat.xOffset : rugrat.xOffset;
+    const screenY = this.canvas.height - (rugrat.y - this.cameraY);
+
+    if (this.assetsLoaded) {
+      const img = rugrat.state === 'celebrating' ? this.rugratsCelebrateImg : this.rugratsWaitingImg;
+      if (img && img.complete && img.naturalWidth > 0) {
+        const frameCount = 2;
+        const frameWidth = img.naturalWidth / frameCount;
+        const frameHeight = img.naturalHeight;
+        const sx = rugrat.frame * frameWidth;
+
+        this.ctx.drawImage(
+          img,
+          sx, 0, frameWidth, frameHeight,
+          rugratX, screenY, rugrat.width, rugrat.height
+        );
+      } else {
+        this.ctx.fillStyle = rugrat.state === 'celebrating' ? '#fbbf24' : '#f59e0b';
+        this.ctx.fillRect(rugratX, screenY, rugrat.width, rugrat.height);
+      }
+    } else {
+      this.ctx.fillStyle = '#f59e0b';
+      this.ctx.fillRect(rugratX, screenY, rugrat.width, rugrat.height);
     }
   }
 

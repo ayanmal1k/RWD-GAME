@@ -1153,12 +1153,6 @@ export class GameEngine {
 
       const vx = type === 'MOVING' ? (Math.random() > 0.5 ? 1.5 : -1.5) * (1 + (currentY / 4000)) : 0;
 
-      let rockyImg = 0;
-      if (type === 'STANDARD' && width >= 100) {
-        const choices = [5, 13, 17];
-        rockyImg = choices[Math.floor(Math.random() * choices.length)];
-      }
-
       const platformId = this.nextPlatformId++;
       this.platforms.push({
         id: platformId,
@@ -1168,8 +1162,7 @@ export class GameEngine {
         height: 18,
         type,
         vx,
-        springState: type === 'SPRING' ? 'idle' : undefined,
-        rockyImg: rockyImg
+        springState: type === 'SPRING' ? 'idle' : undefined
       });
 
       // Mario Spawning (10% chance on moving pipe platforms)
@@ -1421,7 +1414,11 @@ export class GameEngine {
       // C. Spring platform timer animations
       if (platform.type === 'SPRING' && platform.springTimer !== undefined) {
         platform.springTimer--;
-        if (platform.springTimer <= 0) {
+        if (platform.springTimer > 12) {
+          platform.springState = 'compressed';
+        } else if (platform.springTimer > 0) {
+          platform.springState = 'extended';
+        } else {
           platform.springState = 'idle';
           delete platform.springTimer;
         }
@@ -2394,63 +2391,27 @@ export class GameEngine {
     // Procedural pixel arts based on platform type
     switch (platform.type) {
       case 'STANDARD':
-        if (platform.rockyImg && platform.rockyImg > 0) {
-          const negSpace = platform.rockyImg;
-          let img = this.rocky5Bg;
-          if (negSpace === 13) img = this.rocky13Bg;
-          if (negSpace === 17) img = this.rocky17Bg;
+        // 1. Dirt base
+        this.ctx.fillStyle = '#5d4037'; // brown
+        this.ctx.fillRect(x, screenY, platform.width, platform.height);
 
-          if (img && img.complete && img.naturalWidth > 0) {
-            // Draw image stretched to width, and aligned such that its top is negSpace above the collision box
-            this.ctx.drawImage(img, x, screenY - negSpace, platform.width, img.naturalHeight);
-          } else {
-            // Fallback
-            this.ctx.fillStyle = '#5d4037';
-            this.ctx.fillRect(x, screenY, platform.width, platform.height);
-          }
-        } else if (this.rockyBg && this.rockyBg.complete && this.rockyBg.naturalWidth > 0) {
-          this.ctx.save();
-          this.ctx.beginPath();
-          this.ctx.rect(x, screenY, platform.width, platform.height);
-          this.ctx.clip();
-          
-          const pattern = this.ctx.createPattern(this.rockyBg, 'repeat');
-          if (pattern) {
-             const domMatrix = new DOMMatrix().translate(x, screenY).scale(0.1, 0.1);
-             pattern.setTransform(domMatrix);
-             this.ctx.fillStyle = pattern;
-             this.ctx.fill();
-          }
-          this.ctx.restore();
-          
-          // Subtle border for definition removed as requested
-          
-          // Bottom shadow
-          this.ctx.fillStyle = 'rgba(0, 0, 0, 0.4)';
-          this.ctx.fillRect(x, screenY + platform.height - 3, platform.width, 3);
-        } else {
-          // 1. Dirt base
-          this.ctx.fillStyle = '#5d4037'; // brown
-          this.ctx.fillRect(x, screenY, platform.width, platform.height);
+        // Brick dividers (random pixels)
+        this.ctx.fillStyle = '#3e2723'; // dark brown shadow
+        for (let bx = x + 16; bx < x + platform.width; bx += 32) {
+          this.ctx.fillRect(bx, screenY + 8, 2, platform.height - 8);
+        }
+        // Platform bottom shadow
+        this.ctx.fillRect(x, screenY + platform.height - 3, platform.width, 3);
 
-          // Brick dividers (random pixels)
-          this.ctx.fillStyle = '#3e2723'; // dark brown shadow
-          for (let bx = x + 16; bx < x + platform.width; bx += 32) {
-            this.ctx.fillRect(bx, screenY + 8, 2, platform.height - 8);
-          }
-          // Platform bottom shadow
-          this.ctx.fillRect(x, screenY + platform.height - 3, platform.width, 3);
+        // 2. Mossy Grass Top Layer (6px)
+        this.ctx.fillStyle = '#2e7d32'; // dark green
+        this.ctx.fillRect(x, screenY, platform.width, 6);
 
-          // 2. Mossy Grass Top Layer (6px)
-          this.ctx.fillStyle = '#2e7d32'; // dark green
-          this.ctx.fillRect(x, screenY, platform.width, 6);
-
-          // Hanging moss highlights
-          this.ctx.fillStyle = '#4caf50'; // bright green
-          for (let gx = x + 4; gx < x + platform.width; gx += 8) {
-            const depth = (gx % 3 === 0) ? 9 : 6;
-            this.ctx.fillRect(gx, screenY, 4, depth);
-          }
+        // Hanging moss highlights
+        this.ctx.fillStyle = '#4caf50'; // bright green
+        for (let gx = x + 4; gx < x + platform.width; gx += 8) {
+          const depth = (gx % 3 === 0) ? 9 : 6;
+          this.ctx.fillRect(gx, screenY, 4, depth);
         }
         break;
 
@@ -2543,52 +2504,136 @@ export class GameEngine {
         break;
 
       case 'SPRING':
-        let mossOffset = 0;
-        let mossSquash = 0;
-        
-        if (platform.springState === 'compressed') {
-           mossSquash = 6;
-           mossOffset = 6;
-        } else if (platform.springState === 'extended') {
-           mossSquash = -6; // stretches up
-           mossOffset = -6;
+        // 1. Retro Arcade Booster Chassis (metallic base with bevels & hazard stripes)
+        // Outer dark casing
+        this.ctx.fillStyle = '#0f172a';
+        this.ctx.fillRect(x, screenY + 4, platform.width, platform.height - 4);
+
+        // Metallic Slate Inset Face
+        this.ctx.fillStyle = '#1e293b';
+        this.ctx.fillRect(x + 2, screenY + 6, platform.width - 4, platform.height - 8);
+
+        // Retro Industrial Yellow Hazard Stripes
+        this.ctx.fillStyle = '#eab308';
+        for (let hx = x + 6; hx < x + platform.width - 8; hx += 16) {
+          this.ctx.beginPath();
+          this.ctx.moveTo(hx, screenY + platform.height - 3);
+          this.ctx.lineTo(hx + 6, screenY + platform.height - 3);
+          this.ctx.lineTo(hx + 10, screenY + 6);
+          this.ctx.lineTo(hx + 4, screenY + 6);
+          this.ctx.closePath();
+          this.ctx.fill();
         }
 
-        if (this.mossBg && this.mossBg.complete && this.mossBg.naturalWidth > 0) {
-          this.ctx.save();
-          this.ctx.beginPath();
-          // Full width and height of the platform block, adjusted by squash
-          this.ctx.rect(x, screenY + mossOffset, platform.width, platform.height - mossSquash);
-          this.ctx.clip();
+        // Top Chrome Bevel / Trim
+        this.ctx.fillStyle = '#94a3b8';
+        this.ctx.fillRect(x + 2, screenY + 4, platform.width - 4, 2);
+
+        // Corner Chrome Rivets / Bolts
+        this.ctx.fillStyle = '#f8fafc';
+        this.ctx.fillRect(x + 4, screenY + 7, 3, 3);
+        this.ctx.fillRect(x + platform.width - 7, screenY + 7, 3, 3);
+        this.ctx.fillStyle = '#475569';
+        this.ctx.fillRect(x + 5, screenY + 8, 1, 1);
+        this.ctx.fillRect(x + platform.width - 6, screenY + 8, 1, 1);
+
+        // Glowing Retro Upward Chevrons in the center (pulsing LED indicators)
+        const isPulse = Math.floor(Date.now() / 180) % 2 === 0;
+        this.ctx.fillStyle = isPulse ? '#38bdf8' : '#0284c7';
+        const midX = x + platform.width / 2;
+        // Draw 2 mini pixel chevrons ▲ ▲
+        this.ctx.fillRect(midX - 7, screenY + 11, 4, 2);
+        this.ctx.fillRect(midX - 6, screenY + 9, 2, 2);
+        this.ctx.fillRect(midX + 3, screenY + 11, 4, 2);
+        this.ctx.fillRect(midX + 4, screenY + 9, 2, 2);
+
+        // 3D Bottom drop shadow
+        this.ctx.fillStyle = '#020617';
+        this.ctx.fillRect(x, screenY + platform.height - 2, platform.width, 2);
+
+        // 2. High-Tech Retro Bouncy Spring Coil & Rubberized Pad
+        const springCenterX = x + platform.width / 2;
+        const springWidth = Math.min(34, platform.width - 24);
+        const springLeft = springCenterX - springWidth / 2;
+
+        if (platform.springState === 'compressed') {
+          // SQUASHED COMPRESSION: Heavy impact, bright energy flare
+          // Glowing compression flare
+          this.ctx.fillStyle = 'rgba(245, 158, 11, 0.4)';
+          this.ctx.fillRect(springLeft - 4, screenY + 2, springWidth + 8, 8);
+
+          // Squashed dense steel coils
+          this.ctx.fillStyle = '#1e293b'; // dark outline
+          this.ctx.fillRect(springLeft, screenY + 5, springWidth, 4);
+          this.ctx.fillStyle = '#e2e8f0'; // bright silver
+          this.ctx.fillRect(springLeft + 2, screenY + 6, springWidth - 4, 2);
+
+          // Red launch bumper compressed flat against base
+          this.ctx.fillStyle = '#dc2626'; // cherry red
+          this.ctx.fillRect(springLeft - 2, screenY + 2, springWidth + 4, 4);
+          this.ctx.fillStyle = '#fef08a'; // yellow highlight strip
+          this.ctx.fillRect(springLeft, screenY + 2, springWidth, 1);
+        } else if (platform.springState === 'extended') {
+          // LAUNCH EXTENSION: Rocketing upward thrust with speed trails
+          const extTop = screenY - 16;
           
-          const pattern = this.ctx.createPattern(this.mossBg, 'repeat');
-          if (pattern) {
-             const domMatrix = new DOMMatrix().translate(x, screenY + mossOffset).scale(0.05, 0.05);
-             pattern.setTransform(domMatrix);
-             this.ctx.fillStyle = pattern;
-             this.ctx.fill();
+          // Outer Coil Shading & Chrome highlights (4 stretched loops)
+          for (let loop = 0; loop < 4; loop++) {
+            const loopY = extTop + 5 + loop * 5;
+            const loopW = springWidth - (loop % 2 === 0 ? 4 : 0);
+            const loopX = springCenterX - loopW / 2;
+            
+            this.ctx.fillStyle = '#0f172a'; // outline
+            this.ctx.fillRect(loopX, loopY, loopW, 4);
+            this.ctx.fillStyle = '#94a3b8'; // steel body
+            this.ctx.fillRect(loopX + 1, loopY + 1, loopW - 2, 2);
+            this.ctx.fillStyle = '#ffffff'; // chrome shine
+            this.ctx.fillRect(loopX + 3, loopY + 1, 4, 1);
           }
-          this.ctx.restore();
+
+          // Kinetic speed blur lines
+          this.ctx.fillStyle = 'rgba(56, 189, 248, 0.6)';
+          this.ctx.fillRect(springLeft + 4, extTop + 4, 2, 14);
+          this.ctx.fillRect(springLeft + springWidth - 6, extTop + 4, 2, 14);
+
+          // Red Launch Bumper high in the air
+          this.ctx.fillStyle = '#0f172a';
+          this.ctx.fillRect(springLeft - 3, extTop - 1, springWidth + 6, 6);
+          this.ctx.fillStyle = '#ef4444'; // bright arcade red
+          this.ctx.fillRect(springLeft - 2, extTop, springWidth + 4, 4);
+          this.ctx.fillStyle = '#ffffff'; // glossy highlight
+          this.ctx.fillRect(springLeft, extTop, springWidth, 1);
+          this.ctx.fillStyle = '#b91c1c'; // shadow underneath
+          this.ctx.fillRect(springLeft - 2, extTop + 3, springWidth + 4, 1);
         } else {
-          // Moss Trampoline base fallback
-          this.ctx.fillStyle = '#33691E'; // dark moss root base
-          this.ctx.fillRect(x, screenY + platform.height - 4, platform.width, 4);
+          // IDLE RETRO SPRING: Ready to launch, gentle 1px bounce bob
+          const bob = isPulse ? 1 : 0;
+          const idleTop = screenY - 6 + bob;
 
-          // Main Moss Body fallback
-          this.ctx.fillStyle = '#64DD17'; // vibrant green moss
-          this.ctx.fillRect(x + 2, screenY + mossOffset, platform.width - 4, platform.height - 4 - mossSquash);
+          // 3 Classic Coiled Metallic Loops
+          for (let loop = 0; loop < 3; loop++) {
+            const loopY = idleTop + 4 + loop * 3;
+            const loopW = springWidth - (loop % 2 === 1 ? 4 : 0);
+            const loopX = springCenterX - loopW / 2;
 
-          // Fluffy Moss Highlights on top
-          this.ctx.fillStyle = '#76FF03'; 
-          this.ctx.fillRect(x, screenY + mossOffset - 2, platform.width, 6);
-          
-          // Brighter spots
-          this.ctx.fillStyle = '#B2FF59';
-          this.ctx.fillRect(x + 6, screenY + mossOffset, 4, 2);
-          this.ctx.fillRect(x + 18, screenY + mossOffset, 6, 2);
-          if (platform.width > 24) {
-             this.ctx.fillRect(x + platform.width - 14, screenY + mossOffset - 1, 4, 2);
+            this.ctx.fillStyle = '#0f172a'; // dark border
+            this.ctx.fillRect(loopX, loopY, loopW, 3);
+            this.ctx.fillStyle = '#94a3b8'; // steel grey
+            this.ctx.fillRect(loopX + 1, loopY + 1, loopW - 2, 1);
+            this.ctx.fillStyle = '#f8fafc'; // highlight
+            this.ctx.fillRect(loopX + 3, loopY + 1, 3, 1);
           }
+
+          // Red Rubberized Bumper Launch Cap
+          this.ctx.fillStyle = '#0f172a'; // outline
+          this.ctx.fillRect(springLeft - 2, idleTop - 1, springWidth + 4, 6);
+          this.ctx.fillStyle = '#ef4444'; // cherry red
+          this.ctx.fillRect(springLeft - 1, idleTop, springWidth + 2, 4);
+          this.ctx.fillStyle = '#ffffff'; // top gloss shine
+          this.ctx.fillRect(springLeft + 1, idleTop, springWidth - 2, 1);
+          this.ctx.fillStyle = '#facc15'; // yellow arrow indicator on the cap
+          this.ctx.fillRect(springCenterX - 2, idleTop + 1, 4, 1);
+          this.ctx.fillRect(springCenterX - 1, idleTop + 2, 2, 1);
         }
         break;
     }

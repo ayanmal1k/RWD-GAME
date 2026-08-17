@@ -89,6 +89,19 @@ interface Coin {
   active: boolean;
 }
 
+interface MarioNpc {
+  id: number;
+  platformId: number;
+  xOffset: number;
+  y: number;
+  width: number;
+  height: number;
+  touched: boolean;
+  state: 'waiting' | 'cheering';
+  frame: number;
+  frameTimer: number;
+}
+
 interface Particle {
   x: number;
   y: number;
@@ -100,6 +113,7 @@ interface Particle {
   life: number;
   maxLife: number;
   gravity?: boolean;
+  text?: string;
 }
 
 // Retro Sound Synthesizer using Web Audio API
@@ -191,6 +205,30 @@ class SoundSystem {
 
     osc.start(time);
     osc.stop(time + 0.25);
+  }
+
+  public playMario() {
+    this.initCtx();
+    if (this.isMuted || !this.ctx) return;
+
+    const time = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+
+    osc.type = 'square';
+    const notes = [392.00, 523.25, 659.25, 783.99]; // G4, C5, E5, G5
+    notes.forEach((freq, idx) => {
+      osc.frequency.setValueAtTime(freq, time + idx * 0.08);
+    });
+
+    gain.gain.setValueAtTime(0.12, time);
+    gain.gain.linearRampToValueAtTime(0.01, time + notes.length * 0.08 + 0.1);
+
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+
+    osc.start(time);
+    osc.stop(time + notes.length * 0.08 + 0.1);
   }
 
   public playSpring() {
@@ -351,6 +389,8 @@ export class GameEngine {
   private rocky5Bg = new Image();
   private rocky13Bg = new Image();
   private rocky17Bg = new Image();
+  private marioWaitingImg = new Image();
+  private marioCheerImg = new Image();
   private assetsLoaded = false;
 
   public setCharacter(id: CharacterId) {
@@ -408,6 +448,7 @@ export class GameEngine {
   // Game Objects
   private platforms: Platform[] = [];
   private coins: Coin[] = [];
+  private marios: MarioNpc[] = [];
   private particles: Particle[] = [];
 
   // Inputs
@@ -436,7 +477,7 @@ export class GameEngine {
 
   private loadAssets() {
     const charEntries = Object.entries(CHARACTERS) as [CharacterId, CharacterConfig][];
-    const totalAssets = charEntries.length * 3 + 11;
+    const totalAssets = charEntries.length * 3 + 13;
     let loaded = 0;
 
     const onAssetLoad = () => {
@@ -453,8 +494,8 @@ export class GameEngine {
       console.warn(`Asset failed to load: ${src}. Generating pixelated fallback.`);
       // Create colored dummy image
       const canvas = document.createElement('canvas');
-      const isSpriteSheet = name.startsWith('walk') || name === 'coin';
-      canvas.width = isSpriteSheet ? 1536 : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 937;
+      const isSpriteSheet = name.startsWith('walk') || name === 'coin' || name.startsWith('mario');
+      canvas.width = isSpriteSheet ? (name.startsWith('mario') ? 512 : (name === 'coin' ? 1536 : 1536)) : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 937;
       canvas.height = isSpriteSheet ? 256 : (name.startsWith('idle') || name.startsWith('jump')) ? 256 : 1678;
       const ctx = canvas.getContext('2d')!;
       
@@ -491,6 +532,14 @@ export class GameEngine {
           ctx.lineWidth = 12;
           ctx.stroke();
         }
+      } else if (name.startsWith('mario')) {
+        // Draw 2 frames of Mario
+        for (let i = 0; i < 2; i++) {
+          ctx.fillStyle = fallbackColor;
+          ctx.fillRect(i * 256 + 64, 64, 128, 128);
+          ctx.fillStyle = '#ffffff';
+          ctx.fillRect(i * 256 + 96, 96, 64, 64);
+        }
       } else {
         // Backgrounds
         ctx.fillStyle = fallbackColor;
@@ -525,6 +574,8 @@ export class GameEngine {
         else if (name === 'rocky-5') this.rocky5Bg = img;
         else if (name === 'rocky-13') this.rocky13Bg = img;
         else if (name === 'rocky-17') this.rocky17Bg = img;
+        else if (name === 'mario-waiting') this.marioWaitingImg = img;
+        else if (name === 'mario-cheer') this.marioCheerImg = img;
         onAssetLoad();
       };
     };
@@ -597,6 +648,15 @@ export class GameEngine {
     this.rocky17Bg.src = '/rocky-17.png';
     this.rocky17Bg.onload = onAssetLoad;
     this.rocky17Bg.onerror = () => handleLoadError('rocky-17', '#5d4037', '/rocky-17.png');
+
+    // Load Mario Sprites
+    this.marioWaitingImg.src = '/cartoons/mario/waiting_mario.png';
+    this.marioWaitingImg.onload = onAssetLoad;
+    this.marioWaitingImg.onerror = () => handleLoadError('mario-waiting', '#ef4444', '/cartoons/mario/waiting_mario.png');
+
+    this.marioCheerImg.src = '/cartoons/mario/cheer_mario.png';
+    this.marioCheerImg.onload = onAssetLoad;
+    this.marioCheerImg.onerror = () => handleLoadError('mario-cheer', '#ef4444', '/cartoons/mario/cheer_mario.png');
   }
 
   private initInputs() {
@@ -719,6 +779,7 @@ export class GameEngine {
     this.keys = { left: false, right: false, jump: false, shift: false };
     this.platforms = [];
     this.coins = [];
+    this.marios = [];
     this.particles = [];
 
     // 1. Bottom Starting Ground Platform (spanning entire canvas width)
@@ -788,8 +849,9 @@ export class GameEngine {
         rockyImg = choices[Math.floor(Math.random() * choices.length)];
       }
 
+      const platformId = this.nextPlatformId++;
       this.platforms.push({
-        id: this.nextPlatformId++,
+        id: platformId,
         x,
         y: currentY,
         width,
@@ -800,8 +862,27 @@ export class GameEngine {
         rockyImg: rockyImg
       });
 
-      // Coin Spawning on Standard/Moving platforms
-      if (type !== 'CRUMBLING' && Math.random() < 0.28) {
+      // Mario Spawning (10% chance on moving pipe platforms)
+      let hasMario = false;
+      if (type === 'MOVING' && Math.random() < 0.10) {
+        hasMario = true;
+        const marioSize = 54;
+        this.marios.push({
+          id: this.nextPlatformId++,
+          platformId: platformId,
+          xOffset: Math.max(0, (width - marioSize) / 2),
+          y: currentY + marioSize,
+          width: marioSize,
+          height: marioSize,
+          touched: false,
+          state: 'waiting',
+          frame: 0,
+          frameTimer: Math.random() * 2
+        });
+      }
+
+      // Coin Spawning on Standard/Moving platforms (if Mario is not on it)
+      if (type !== 'CRUMBLING' && !hasMario && Math.random() < 0.28) {
         this.coins.push({
           id: this.nextPlatformId++,
           x: x + width / 2 - 14,
@@ -909,6 +990,7 @@ export class GameEngine {
     const cleanupLimit = this.cameraY - 150;
     this.platforms = this.platforms.filter((p) => p.y >= cleanupLimit || p.id === 1);
     this.coins = this.coins.filter((c) => c.y >= cleanupLimit);
+    this.marios = this.marios.filter((m) => m.y >= cleanupLimit);
 
     // Update remaining platforms
     this.platforms.forEach((platform) => {
@@ -1011,6 +1093,38 @@ export class GameEngine {
       }
     });
 
+    // 6.b Mario interaction & 2-frame animation loops
+    this.marios.forEach((mario) => {
+      const platform = this.platforms.find((p) => p.id === mario.platformId);
+      const marioX = platform ? platform.x + mario.xOffset : mario.xOffset;
+      mario.y = platform ? platform.y + mario.height : mario.y;
+
+      // 2-frame animation loop (waiting = idle, cheering = celebration loop)
+      mario.frameTimer += (mario.state === 'cheering' ? 0.12 : 0.07);
+      mario.frame = Math.floor(mario.frameTimer) % 2;
+
+      if (!mario.touched) {
+        const playerCenterX = this.player.x + this.player.width / 2;
+        const playerCenterY = this.player.y - this.player.height / 2;
+        const marioCenterX = marioX + mario.width / 2;
+        const marioCenterY = mario.y - mario.height / 2;
+        const distance = Math.hypot(playerCenterX - marioCenterX, playerCenterY - marioCenterY);
+
+        const overlapX = this.player.x + this.player.width >= marioX && this.player.x <= marioX + mario.width;
+        const overlapY = this.player.y >= mario.y - mario.height && this.player.y - this.player.height <= mario.y;
+
+        if (distance < 48 || (overlapX && overlapY)) {
+          mario.touched = true;
+          mario.state = 'cheering';
+          mario.frameTimer = 0;
+          this.score += 100; // Award 100 bonus points on touch
+          this.callbacks.onScoreChange(this.score);
+          this.audio.playMario();
+          this.triggerMarioSparks(marioCenterX, marioCenterY);
+        }
+      }
+    });
+
     // 7. Particles update
     this.particles.forEach((p) => {
       p.x += p.vx;
@@ -1065,6 +1179,40 @@ export class GameEngine {
   }
 
   // Particle Effects
+  private triggerMarioSparks(x: number, y: number) {
+    // Floating score text (+100)
+    this.particles.push({
+      x: x - 24,
+      y: y + 20,
+      vx: 0,
+      vy: 1.2,
+      size: 14,
+      color: '#fbbf24',
+      alpha: 1,
+      life: 45,
+      maxLife: 45,
+      text: '+100'
+    });
+
+    // Mario celebratory star/confetti sparks
+    for (let i = 0; i < 22; i++) {
+      const angle = Math.random() * Math.PI * 2;
+      const speed = 2.0 + Math.random() * 3.5;
+      this.particles.push({
+        x,
+        y,
+        vx: Math.cos(angle) * speed,
+        vy: Math.sin(angle) * speed,
+        size: 3 + Math.random() * 4,
+        color: ['#ef4444', '#3b82f6', '#ffd700', '#22c55e', '#ffffff'][Math.floor(Math.random() * 5)],
+        alpha: 1,
+        life: 25 + Math.random() * 15,
+        maxLife: 40,
+        gravity: true
+      });
+    }
+  }
+
   private triggerCoinSparks(x: number, y: number) {
     for (let i = 0; i < 15; i++) {
       const angle = Math.random() * Math.PI * 2;
@@ -1164,6 +1312,7 @@ export class GameEngine {
     // B. Draw Game Objects (Translate from World coordinates to Canvas screen coordinates)
     this.platforms.forEach((platform) => this.drawPlatform(platform));
     this.coins.forEach((coin) => this.drawCoin(coin));
+    this.marios.forEach((mario) => this.drawMario(mario));
     this.drawParticles();
 
     // C. Draw Player Character
@@ -1278,6 +1427,34 @@ export class GameEngine {
       this.ctx.beginPath();
       this.ctx.arc(coin.x + coin.width / 2, screenY + coin.height / 2, coin.width / 2, 0, Math.PI * 2);
       this.ctx.fill();
+    }
+  }
+
+  // Draw Mario NPC (waiting / cheering animation)
+  private drawMario(mario: MarioNpc) {
+    const platform = this.platforms.find((p) => p.id === mario.platformId);
+    const marioX = platform ? platform.x + mario.xOffset : mario.xOffset;
+    const screenY = this.canvas.height - (mario.y - this.cameraY);
+
+    if (this.assetsLoaded) {
+      const img = mario.state === 'cheering' ? this.marioCheerImg : this.marioWaitingImg;
+      if (img && img.complete && img.naturalWidth > 0) {
+        const frameWidth = 256;
+        const frameHeight = 256;
+        const sx = mario.frame * frameWidth;
+
+        this.ctx.drawImage(
+          img,
+          sx, 0, frameWidth, frameHeight,
+          marioX, screenY, mario.width, mario.height
+        );
+      } else {
+        this.ctx.fillStyle = mario.state === 'cheering' ? '#22c55e' : '#ef4444';
+        this.ctx.fillRect(marioX, screenY, mario.width, mario.height);
+      }
+    } else {
+      this.ctx.fillStyle = '#ef4444';
+      this.ctx.fillRect(marioX, screenY, mario.width, mario.height);
     }
   }
 
@@ -1510,8 +1687,16 @@ export class GameEngine {
       const screenY = this.canvas.height - (p.y - this.cameraY);
       this.ctx.save();
       this.ctx.globalAlpha = p.alpha;
-      this.ctx.fillStyle = p.color;
-      this.ctx.fillRect(p.x, screenY, p.size, p.size);
+      if (p.text) {
+        this.ctx.font = '14px "Press Start 2P", monospace';
+        this.ctx.fillStyle = 'rgba(0, 0, 0, 0.8)';
+        this.ctx.fillText(p.text, p.x + 2, screenY + 2);
+        this.ctx.fillStyle = p.color;
+        this.ctx.fillText(p.text, p.x, screenY);
+      } else {
+        this.ctx.fillStyle = p.color;
+        this.ctx.fillRect(p.x, screenY, p.size, p.size);
+      }
       this.ctx.restore();
     });
   }

@@ -17,23 +17,23 @@ const outfit = Outfit({
 })
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://realibexcoin.netlify.app'),
-  title: '$REAL IBEX — THIS IS NOT JUST A COIN. THIS IS $REAL.',
-  description: 'Join the $REAL Ibex Republic. Built for growth, designed to last. Real vision, real community, real future. Play $REAL Mountain Climber, collect coins, and exchange for $REAL Solana tokens.',
-  keywords: ['$REAL', 'Real Ibex', 'Real Coin', 'Crypto', 'Memecoin', 'Solana', 'Web3', 'Real Ecosystem', 'Ibex Republic', 'Mountain Climber', 'Real Token'],
-  authors: [{ name: 'Real Ibex Republic' }],
-  creator: 'Real Ibex Republic',
-  publisher: 'Real Ibex Republic',
+  metadataBase: new URL('https://rewindstatic.io'),
+  title: 'Rewind Static ($RWD) — Retro Arcade Game & Solana Token Exchanger',
+  description: 'Rewind Static ($RWD) Arcade. Play the retro climber game, collect coins, climb the live global leaderboard, and exchange coins for $RWD Solana tokens.',
+  keywords: ['$RWD', 'Rewind Static', 'RWD Token', 'Crypto', 'Solana', 'Web3', 'Mountain Climber', 'Retro Game'],
+  authors: [{ name: 'Rewind Static' }],
+  creator: 'Rewind Static',
+  publisher: 'Rewind Static',
   icons: {
     icon: '/logo.jpeg',
     shortcut: '/logo.jpeg',
     apple: '/logo.jpeg',
   },
   openGraph: {
-    title: '$REAL IBEX — THIS IS NOT JUST A COIN. THIS IS $REAL.',
-    description: 'Join the $REAL Ibex Republic. Built for growth, designed to last. Real vision, real community, real future. Scale the mountain and earn $REAL tokens.',
-    url: 'https://realibex.com',
-    siteName: '$REAL IBEX REPUBLIC',
+    title: 'Rewind Static ($RWD) — Retro Arcade Game & Solana Token Exchanger',
+    description: 'Play the retro climber game, collect coins, climb the live global leaderboard, and exchange coins for $RWD Solana tokens.',
+    url: 'https://rewindstatic.io',
+    siteName: 'Rewind Static ($RWD)',
     locale: 'en_US',
     type: 'website',
     images: [
@@ -41,15 +41,15 @@ export const metadata: Metadata = {
         url: '/logo.jpeg',
         width: 1200,
         height: 630,
-        alt: '$REAL Ibex Republic Hero Banner',
+        alt: 'Rewind Static ($RWD) Hero Banner',
       },
     ],
   },
   twitter: {
     card: 'summary_large_image',
-    title: '$REAL IBEX — THIS IS NOT JUST A COIN. THIS IS $REAL.',
-    description: 'Join the $REAL Ibex Republic. Built for growth, designed to last. Real vision, real community, real future.',
-    creator: '@RealIbex',
+    title: 'Rewind Static ($RWD) — Retro Arcade Game & Solana Token Exchanger',
+    description: 'Play the retro climber game, collect coins, climb the live global leaderboard, and exchange coins for $RWD Solana tokens.',
+    creator: '@RewindStatic',
     images: ['/logo.jpeg'],
   },
   robots: {
@@ -65,7 +65,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en" className={`${pressStart.variable} ${outfit.variable}`}>
-      <body className="font-sans antialiased bg-[#0a0802] text-[#fef08a]">
+      <body className="font-sans antialiased bg-[#07040d] text-[#f5d0fe] selection:bg-purple-600 selection:text-white">
         <DynamicProvider>
           <Navbar />
           {children}

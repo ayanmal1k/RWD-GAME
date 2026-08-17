@@ -6,21 +6,30 @@ const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-b
 // Re-usable Solana connection configured with the environment RPC
 export const solanaConnection = new Connection(RPC_URL, 'confirmed');
 
-export const REAL_TOKEN_MINT =
+export const RWD_TOKEN_MINT =
+  process.env.NEXT_PUBLIC_RWD_TOKEN_ADDRESS ||
+  process.env.RWD_TOKEN_MINT_ADDRESS ||
   process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS ||
   process.env.REAL_TOKEN_MINT_ADDRESS ||
   'BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv';
 
-export const MIN_REAL_REQUIRED = Number(process.env.NEXT_PUBLIC_MIN_REAL_REQUIRED ?? 0);
+export const REAL_TOKEN_MINT = RWD_TOKEN_MINT;
 
-export async function fetchRealTokenBalance(
+export const MIN_RWD_REQUIRED = Number(
+  process.env.NEXT_PUBLIC_MIN_RWD_REQUIRED ??
+  process.env.NEXT_PUBLIC_MIN_REAL_REQUIRED ??
+  0
+);
+export const MIN_REAL_REQUIRED = MIN_RWD_REQUIRED;
+
+export async function fetchRwdTokenBalance(
   ownerAddress: string,
   connection: Connection = solanaConnection
 ): Promise<number> {
   if (!ownerAddress) return 0;
   try {
     const ownerPubKey = new PublicKey(ownerAddress);
-    const mintPubKey = new PublicKey(REAL_TOKEN_MINT);
+    const mintPubKey = new PublicKey(RWD_TOKEN_MINT);
 
     const accountBalances = new Map<string, number>();
 
@@ -53,7 +62,9 @@ export async function fetchRealTokenBalance(
 
     return totalBalance;
   } catch (err) {
-    console.error('Error fetching REAL token balance:', err);
+    console.error('Error fetching RWD token balance:', err);
     return 0;
   }
 }
+
+export const fetchRealTokenBalance = fetchRwdTokenBalance;

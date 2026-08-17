@@ -26,12 +26,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Valid userAddress is required' }, { status: 400 });
     }
 
-    // Verify $REAL token balance on-chain
-    const realBalance = await fetchRealTokenBalance(userAddress);
-    if (realBalance < MIN_REAL_REQUIRED) {
+    // Verify $RWD token balance on-chain
+    const rwdBalance = await fetchRealTokenBalance(userAddress);
+    if (rwdBalance < MIN_REAL_REQUIRED) {
       return NextResponse.json(
         {
-          error: `Access Denied: You must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $REAL tokens in your wallet to withdraw. Current holdings: ${realBalance.toLocaleString()} $REAL.`
+          error: `Access Denied: You must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $RWD tokens in your wallet to withdraw. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
         },
         { status: 403 }
       );
@@ -71,7 +71,7 @@ export async function POST(request: Request) {
 
     let txSignature = `SimulatedTx_${Math.random().toString(36).slice(2, 12)}_${Date.now()}`;
     let isSimulated = true;
-    let payoutAsset = '$REAL';
+    let payoutAsset = '$RWD';
     let payoutAmount = tokensPaid;
 
     // Check if real Treasury Private Key exists in environment
@@ -122,7 +122,7 @@ export async function POST(request: Request) {
           const neededSol = ((ataRentFee + 50000) / 1e9).toFixed(4);
           return NextResponse.json(
             {
-              error: `Treasury Wallet low SOL balance! Treasury has ${currentSol} SOL, but needs at least ${neededSol} SOL to create the recipient's $REAL Token Account. Please top up your Treasury Wallet with SOL!`
+              error: `Treasury Wallet low SOL balance! Treasury has ${currentSol} SOL, but needs at least ${neededSol} SOL to create the recipient's $RWD Token Account. Please top up your Treasury Wallet with SOL!`
             },
             { status: 500 }
           );
@@ -158,13 +158,13 @@ export async function POST(request: Request) {
 
         txSignature = await sendAndConfirmTransaction(connection, transaction, [treasuryKeypair]);
         isSimulated = false;
-        payoutAsset = '$REAL';
+        payoutAsset = '$RWD';
         payoutAmount = tokensPaid;
-        console.log(`[SOLANA TREASURY $REAL PAYOUT SUCCESS] Tx: ${txSignature}`);
+        console.log(`[SOLANA TREASURY $RWD PAYOUT SUCCESS] Tx: ${txSignature}`);
       } catch (err: any) {
-        console.error('Real Solana $REAL token transfer failed:', err?.message || err);
+        console.error('Solana $RWD token transfer failed:', err?.message || err);
         return NextResponse.json(
-          { error: `Treasury $REAL token payout error: ${err?.message || 'Transaction failed. Check treasury SOL and $REAL token balances.'}` },
+          { error: `Treasury $RWD token payout error: ${err?.message || 'Transaction failed. Check treasury SOL and $RWD token balances.'}` },
           { status: 500 }
         );
       }

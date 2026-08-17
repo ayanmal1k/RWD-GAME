@@ -14,12 +14,12 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Valid userAddress is required' }, { status: 400 });
     }
 
-    // Verify $REAL token balance on-chain
-    const realBalance = await fetchRealTokenBalance(userAddress);
-    if (realBalance < MIN_REAL_REQUIRED) {
+    // Verify $RWD token balance on-chain
+    const rwdBalance = await fetchRealTokenBalance(userAddress);
+    if (rwdBalance < MIN_REAL_REQUIRED) {
       return NextResponse.json(
         {
-          error: `Access Denied: Wallet must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $REAL tokens to play. Current holdings: ${realBalance.toLocaleString()} $REAL.`
+          error: `Access Denied: Wallet must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $RWD tokens to play. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
         },
         { status: 403 }
       );

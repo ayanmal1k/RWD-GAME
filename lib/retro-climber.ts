@@ -346,7 +346,7 @@ export class GameEngine {
   private sky2Bg = new Image();
   private rockyBg = new Image();
   private mossBg = new Image();
-  private logBg = new Image();
+  private pipeBg = new Image();
   private crumblingBg = new Image();
   private rocky5Bg = new Image();
   private rocky13Bg = new Image();
@@ -520,7 +520,7 @@ export class GameEngine {
         else if (name === 'sky2') this.sky2Bg = img;
         else if (name === 'rocky') this.rockyBg = img;
         else if (name === 'moss') this.mossBg = img;
-        else if (name === 'log') this.logBg = img;
+        else if (name === 'pipe') this.pipeBg = img;
         else if (name === 'crumbling') this.crumblingBg = img;
         else if (name === 'rocky-5') this.rocky5Bg = img;
         else if (name === 'rocky-13') this.rocky13Bg = img;
@@ -575,10 +575,10 @@ export class GameEngine {
     this.mossBg.onload = onAssetLoad;
     this.mossBg.onerror = () => handleLoadError('moss', '#64DD17', '/moss.png');
 
-    // Load Log Background
-    this.logBg.src = '/log-64x256.png';
-    this.logBg.onload = onAssetLoad;
-    this.logBg.onerror = () => handleLoadError('log', '#795548', '/log-64x256.png');
+    // Load Pipe Background
+    this.pipeBg.src = '/pipe-64x256.png';
+    this.pipeBg.onload = onAssetLoad;
+    this.pipeBg.onerror = () => handleLoadError('pipe', '#2e7d32', '/pipe-64x256.png');
 
     // Load Crumbling Background
     this.crumblingBg.src = '/breaking-stone.png';
@@ -1363,37 +1363,33 @@ export class GameEngine {
         break;
 
       case 'MOVING':
-        if (this.logBg && this.logBg.complete && this.logBg.naturalWidth > 0) {
+        if (this.pipeBg && this.pipeBg.complete && this.pipeBg.naturalWidth > 0) {
           this.ctx.save();
           this.ctx.beginPath();
-          // Draw image starting 15px higher, giving goat a 15px negative space tolerance on top
+          // Draw image starting 15px higher, giving character a 15px negative space tolerance on top
           this.ctx.rect(x, screenY - 15, platform.width, platform.height + 15);
           this.ctx.clip();
           
-          // Draw image stretched to fit the platform width and height (+ 15px tolerance)
-          this.ctx.drawImage(this.logBg, x, screenY - 15, platform.width, platform.height + 15);
+          // Draw pipe image stretched to fit the platform width and height (+ 15px tolerance)
+          this.ctx.drawImage(this.pipeBg, x, screenY - 15, platform.width, platform.height + 15);
           this.ctx.restore();
         } else {
-          // Floating fallen tree log fallback
-          this.ctx.fillStyle = '#5d4037'; // log base brown
+          // Floating pipe fallback
+          this.ctx.fillStyle = '#2e7d32'; // pipe green base
           this.ctx.fillRect(x, screenY, platform.width, platform.height);
 
-          // Bark texture lines
-          this.ctx.fillStyle = '#4e342e'; 
-          this.ctx.fillRect(x + 4, screenY + 4, platform.width - 12, 2);
-          this.ctx.fillRect(x + 8, screenY + 12, platform.width - 24, 2);
-          if (platform.height > 20) {
-             this.ctx.fillRect(x + 2, screenY + 20, platform.width - 8, 2);
-          }
+          // Pipe metallic highlight
+          this.ctx.fillStyle = '#4caf50'; 
+          this.ctx.fillRect(x + 4, screenY + 2, platform.width - 8, 3);
 
-          // Log ends (cut cross sections)
-          this.ctx.fillStyle = '#795548'; 
+          // Pipe flange ends
+          this.ctx.fillStyle = '#1b5e20'; 
           this.ctx.fillRect(x, screenY, 4, platform.height);
           this.ctx.fillRect(x + platform.width - 4, screenY, 4, platform.height);
 
           // Bottom shadow
-          this.ctx.fillStyle = '#3e2723';
-          this.ctx.fillRect(x, screenY + platform.height - 4, platform.width, 4);
+          this.ctx.fillStyle = '#0d3810';
+          this.ctx.fillRect(x, screenY + platform.height - 3, platform.width, 3);
         }
         break;
 
@@ -1552,25 +1548,25 @@ export class GameEngine {
     this.drawEndlessBackground();
 
     this.ctx.save();
-    this.ctx.fillStyle = 'rgba(5, 26, 10, 0.7)';
+    this.ctx.fillStyle = 'rgba(7, 4, 13, 0.85)';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Title Logo
     this.ctx.font = '18px "Press Start 2P", monospace';
-    this.ctx.fillStyle = '#2e7d32';
+    this.ctx.fillStyle = '#9333ea';
     this.ctx.textAlign = 'center';
-    this.ctx.fillText('$REAL Mountain Climber', this.canvas.width / 2, 220);
-    this.ctx.fillStyle = '#81c784';
-    this.ctx.fillText('$REAL Mountain Climber', this.canvas.width / 2 - 2, 218);
+    this.ctx.fillText('$RWD Mountain Climber', this.canvas.width / 2, 220);
+    this.ctx.fillStyle = '#e879f9';
+    this.ctx.fillText('$RWD Mountain Climber', this.canvas.width / 2 - 2, 218);
 
     // Help instructions
     this.ctx.font = '11px "Press Start 2P", monospace';
-    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillStyle = '#f5d0fe';
     this.ctx.fillText('CLIMB HIGH. COLLECT COINS.', this.canvas.width / 2, 320);
     this.ctx.fillText('AVOID THE FALL!', this.canvas.width / 2, 345);
 
     this.ctx.font = '10px "Press Start 2P", monospace';
-    this.ctx.fillStyle = '#a3b8a8';
+    this.ctx.fillStyle = '#c084fc';
     this.ctx.fillText('A / D OR ARROWS : MOVE LEFT/RIGHT', this.canvas.width / 2, 430);
     this.ctx.fillText('SPACE OR W / UP : JUMP', this.canvas.width / 2, 460);
 
@@ -1578,7 +1574,7 @@ export class GameEngine {
     const blinkVal = Math.floor(Date.now() / 600) % 2;
     if (blinkVal === 0) {
       this.ctx.font = '14px "Press Start 2P", monospace';
-      this.ctx.fillStyle = '#aed581';
+      this.ctx.fillStyle = '#d946ef';
       this.ctx.fillText('CLICK PLAY TO START', this.canvas.width / 2, 580);
     }
 
@@ -1587,7 +1583,7 @@ export class GameEngine {
 
   private drawGameOverScreen() {
     this.ctx.save();
-    this.ctx.fillStyle = 'rgba(5, 18, 5, 0.82)';
+    this.ctx.fillStyle = 'rgba(7, 4, 13, 0.9)';
     this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
 
     // Game Over Text
@@ -1600,16 +1596,16 @@ export class GameEngine {
 
     // Score report
     this.ctx.font = '16px "Press Start 2P", monospace';
-    this.ctx.fillStyle = '#ffffff';
+    this.ctx.fillStyle = '#f5d0fe';
     this.ctx.fillText(`SCORE: ${this.score}`, this.canvas.width / 2, 340);
-    this.ctx.fillStyle = '#ffd700';
+    this.ctx.fillStyle = '#e879f9';
     this.ctx.fillText(`COINS: ${this.coinsCount}`, this.canvas.width / 2, 390);
 
     // Prompt
     const blinkVal = Math.floor(Date.now() / 600) % 2;
     if (blinkVal === 0) {
       this.ctx.font = '12px "Press Start 2P", monospace';
-      this.ctx.fillStyle = '#aed581';
+      this.ctx.fillStyle = '#c084fc';
       this.ctx.fillText('CLICK RESTART TO TRY AGAIN', this.canvas.width / 2, 540);
     }
 

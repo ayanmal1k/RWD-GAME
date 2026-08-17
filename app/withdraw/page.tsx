@@ -117,7 +117,7 @@ export default function WithdrawPage() {
     }
 
     if (!isEligible) {
-      setErrorMsg(`Withdrawal locked! You must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $REAL tokens in your wallet to withdraw.`);
+      setErrorMsg(`Withdrawal locked! You must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $RWD tokens in your wallet to withdraw.`);
       return;
     }
 
@@ -158,34 +158,35 @@ export default function WithdrawPage() {
   };
 
   return (
-    <main className="min-h-screen bg-[#0a0802] text-[#fef08a] antialiased py-10 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-4xl mx-auto space-y-10">
+    <main className="min-h-screen bg-[#07040d] text-[#f5d0fe] antialiased py-10 px-4 sm:px-6 lg:px-8 relative">
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_50%_0%,rgba(168,85,247,0.2),transparent_60%)] pointer-events-none" />
+      <div className="max-w-4xl mx-auto space-y-10 relative z-10">
 
         {/* Page Header */}
         <div className="text-center space-y-3">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-yellow-500/10 border border-yellow-500/30 text-yellow-400 text-xs font-mono font-bold tracking-widest uppercase">
-            <Sparkles className="w-3.5 h-3.5" /> Solana Token Treasury
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-purple-500/15 border border-purple-500/30 text-fuchsia-300 text-xs font-mono font-bold tracking-widest uppercase shadow-[0_0_12px_rgba(168,85,247,0.3)]">
+            <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" /> Solana Token Treasury
           </div>
-          <h1 className="text-3xl sm:text-5xl font-extrabold font-press-start text-transparent bg-clip-text bg-gradient-to-r from-yellow-300 via-amber-400 to-yellow-500 drop-shadow-[0_4px_12px_rgba(0,0,0,0.8)]">
+          <h1 className="text-3xl sm:text-5xl font-extrabold font-press-start text-transparent bg-clip-text bg-gradient-to-r from-purple-200 via-fuchsia-400 to-pink-400 drop-shadow-[0_0_15px_rgba(217,70,239,0.7)]">
             TREASURY EXCHANGE
           </h1>
-          <p className="text-xs sm:text-sm font-mono text-amber-200/70 max-w-xl mx-auto">
-            Convert your hard-earned climbing coins into $REAL tokens. Paid directly from our Solana treasury wallet.
+          <p className="text-xs sm:text-sm font-mono text-purple-200/80 max-w-xl mx-auto">
+            Convert your hard-earned climbing coins into <strong className="text-fuchsia-300">$RWD</strong> (Rewind Static) tokens. Paid directly from our Solana treasury wallet.
           </p>
 
-          {/* $REAL Token Address & Minimum Limit Badges */}
+          {/* $RWD Token Address & Minimum Limit Badges */}
           <div className="flex flex-wrap items-center justify-center gap-3">
             {process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS && (
-              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#171206] border border-yellow-500/30 rounded-xl text-xs font-mono text-amber-300">
-                <span className="text-[10px] text-amber-400 font-bold uppercase">$REAL MINT:</span>
-                <span className="font-bold text-yellow-300 select-all font-mono">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#140b24] border border-purple-500/30 rounded-xl text-xs font-mono text-purple-200">
+                <span className="text-[10px] text-fuchsia-400 font-bold uppercase">$RWD MINT:</span>
+                <span className="font-bold text-purple-100 select-all font-mono">
                   {process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS}
                 </span>
                 <a
                   href={`https://solscan.io/token/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS}`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="text-amber-400 hover:text-yellow-200 ml-1 inline-flex items-center"
+                  className="text-fuchsia-400 hover:text-white ml-1 inline-flex items-center"
                   title="View on Solscan"
                 >
                   <ExternalLink className="w-3.5 h-3.5" />
@@ -193,24 +194,24 @@ export default function WithdrawPage() {
               </div>
             )}
 
-            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#171206] border border-yellow-500/30 rounded-xl text-xs font-mono text-amber-300">
-              <ShieldCheck className="w-3.5 h-3.5 text-yellow-400" />
-              <span className="text-[10px] text-amber-400 font-bold uppercase">MIN WITHDRAWAL:</span>
-              <span className="font-bold text-yellow-300 font-mono">1,000 COINS (= 100 $REAL)</span>
+            <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#140b24] border border-purple-500/30 rounded-xl text-xs font-mono text-purple-200">
+              <ShieldCheck className="w-3.5 h-3.5 text-fuchsia-400" />
+              <span className="text-[10px] text-purple-300 font-bold uppercase">MIN WITHDRAWAL:</span>
+              <span className="font-bold text-fuchsia-300 font-mono">1,000 COINS (= 100 $RWD)</span>
             </div>
           </div>
         </div>
 
         {/* Live Balance Card */}
-        <div className="bg-gradient-to-r from-[#171206] via-[#261e0b] to-[#171206] border-2 border-yellow-500/40 rounded-3xl p-6 sm:p-8 shadow-[0_0_35px_rgba(234,179,8,0.2)] flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
+        <div className="bg-gradient-to-r from-[#140b24] via-[#241340] to-[#140b24] border-2 border-purple-500/40 rounded-3xl p-6 sm:p-8 shadow-[0_0_35px_rgba(168,85,247,0.25)] flex flex-col sm:flex-row items-center justify-between gap-6 relative overflow-hidden">
           <div className="space-y-1 text-center sm:text-left z-10">
-            <span className="text-xs font-mono font-bold text-amber-400 uppercase tracking-widest">
+            <span className="text-xs font-mono font-bold text-purple-300 uppercase tracking-widest">
               YOUR BANK BALANCE
             </span>
             <div className="flex items-center justify-center sm:justify-start gap-3">
-              <CoinIcon className="w-8 h-8 drop-shadow-[0_0_8px_rgba(250,204,21,0.8)] animate-pulse" />
-              <span className="text-3xl sm:text-4xl font-extrabold font-press-start text-yellow-300">
-                {bankCoins.toLocaleString()} <span className="text-sm font-mono text-amber-400">COINS</span>
+              <CoinIcon className="w-8 h-8 drop-shadow-[0_0_8px_rgba(217,70,239,0.8)] animate-pulse" />
+              <span className="text-3xl sm:text-4xl font-extrabold font-press-start text-fuchsia-300">
+                {bankCoins.toLocaleString()} <span className="text-sm font-mono text-purple-300">COINS</span>
               </span>
             </div>
           </div>
@@ -219,14 +220,14 @@ export default function WithdrawPage() {
             {!address ? (
               <button
                 onClick={() => setShowAuthFlow(true)}
-                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-500 to-yellow-400 text-[#0a0802] font-bold font-press-start text-xs rounded-xl shadow-lg hover:scale-105 transition-all flex items-center justify-center gap-2"
+                className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white font-bold font-press-start text-xs rounded-xl shadow-[0_0_20px_rgba(168,85,247,0.5)] hover:scale-105 transition-all flex items-center justify-center gap-2 border border-fuchsia-300"
               >
                 <Wallet className="w-4 h-4" /> CONNECT WALLET TO EXCHANGER
               </button>
             ) : (
-              <div className="px-5 py-2.5 bg-black/40 border border-yellow-500/30 rounded-2xl text-center">
-                <span className="text-[10px] font-mono text-amber-400/80 block">CONNECTED WALLET</span>
-                <span className="text-xs font-mono font-bold text-yellow-200">
+              <div className="px-5 py-2.5 bg-black/40 border border-purple-500/30 rounded-2xl text-center">
+                <span className="text-[10px] font-mono text-purple-300/80 block">CONNECTED WALLET</span>
+                <span className="text-xs font-mono font-bold text-purple-200">
                   {address.slice(0, 6)}...{address.slice(-6)}
                 </span>
               </div>
@@ -235,34 +236,34 @@ export default function WithdrawPage() {
         </div>
 
         {/* Exchange Form Section */}
-        <div className="bg-[#120d04] border border-yellow-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-yellow-500/15">
-            <h2 className="text-sm font-bold font-press-start text-amber-300 flex items-center gap-2">
-              <ArrowRightLeft className="w-4 h-4 text-yellow-400" /> CONVERT COINS TO $REAL TOKENS
+        <div className="bg-[#120722] border border-purple-500/30 rounded-3xl p-6 sm:p-8 shadow-2xl relative space-y-6">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 pb-2 border-b border-purple-500/20">
+            <h2 className="text-sm font-bold font-press-start text-fuchsia-300 flex items-center gap-2">
+              <ArrowRightLeft className="w-4 h-4 text-purple-400" /> CONVERT COINS TO $RWD TOKENS
             </h2>
-            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-yellow-500/10 border border-yellow-500/30 rounded-xl text-[11px] font-mono text-yellow-300">
+            <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/15 border border-purple-500/30 rounded-xl text-[11px] font-mono text-purple-200">
               <span>MIN LIMIT:</span>
-              <span className="font-bold text-amber-400">1,000 COINS</span>
+              <span className="font-bold text-fuchsia-300">1,000 COINS</span>
             </div>
           </div>
 
-          {/* $REAL Token Gate Requirement Notice */}
+          {/* $RWD Token Gate Requirement Notice */}
           {address && (
             <div className="space-y-3">
               <div className={`p-4 rounded-2xl border text-xs font-mono flex items-center justify-between gap-3 ${isCheckingBalance
-                  ? 'bg-yellow-500/10 border-yellow-500/30 text-amber-300 animate-pulse'
+                  ? 'bg-purple-500/10 border-purple-500/30 text-fuchsia-300 animate-pulse'
                   : isEligible
-                    ? 'bg-emerald-500/15 border-emerald-500/40 text-emerald-300'
+                    ? 'bg-purple-500/20 border-purple-500/40 text-purple-200'
                     : 'bg-red-500/15 border-red-500/40 text-red-300'
                 }`}>
                 <div className="flex items-center gap-3">
-                  <img src="/logo.jpeg" alt="$REAL" className="w-8 h-8 rounded-full border border-amber-400/40 object-cover shrink-0" />
+                  <img src="/logo.jpeg" alt="$RWD" className="w-8 h-8 rounded-full border border-fuchsia-400/40 object-cover shrink-0" />
                   <div className="flex flex-col gap-0.5">
-                    <span className="font-bold text-amber-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
-                      $REAL TOKEN HOLDINGS REQUIREMENT
+                    <span className="font-bold text-purple-300 uppercase tracking-wider text-[11px] flex items-center gap-1.5">
+                      $RWD TOKEN HOLDINGS REQUIREMENT
                     </span>
                     <span className="text-white text-xs">
-                      Current Balance: <strong className="text-yellow-300">{isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} $REAL`}</strong> {MIN_REAL_REQUIRED > 0 ? `(Min Required: ${MIN_REAL_REQUIRED.toLocaleString()} $REAL)` : '(No Min Required)'}
+                      Current Balance: <strong className="text-fuchsia-300">{isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} $RWD`}</strong> {MIN_REAL_REQUIRED > 0 ? `(Min Required: ${MIN_REAL_REQUIRED.toLocaleString()} $RWD)` : '(No Min Required)'}
                     </span>
                   </div>
                 </div>
@@ -272,14 +273,14 @@ export default function WithdrawPage() {
                       href={`https://pump.fun/coin/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS || 'EVNWDT4QtZv4tBGMaFpygGq8bxEEcZMUZxMmhtaspump'}`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="px-3.5 py-2 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] font-press-start text-[9px] font-extrabold rounded-xl border border-yellow-300 shadow-[0_0_15px_rgba(250,204,21,0.5)] flex items-center gap-1.5 transition-all transform hover:scale-105 active:scale-95"
+                      className="px-3.5 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 hover:from-purple-500 hover:to-fuchsia-400 text-white font-press-start text-[9px] font-extrabold rounded-xl border border-fuchsia-300 shadow-[0_0_15px_rgba(168,85,247,0.5)] flex items-center gap-1.5 transition-all transform hover:scale-105 active:scale-95"
                     >
-                      <ShoppingCart className="w-3.5 h-3.5 text-[#0a0802]" />
-                      <span>BUY $REAL ON PUMP.FUN</span>
-                      <ExternalLink className="w-3 h-3 text-[#0a0802]" />
+                      <ShoppingCart className="w-3.5 h-3.5 text-white" />
+                      <span>BUY $RWD ON PUMP.FUN</span>
+                      <ExternalLink className="w-3 h-3 text-white" />
                     </a>
                   )}
-                  <span className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase shrink-0 font-mono ${isEligible ? 'bg-emerald-500/30 text-emerald-200 border border-emerald-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
+                  <span className={`px-3 py-1.5 rounded-xl text-[10px] font-bold uppercase shrink-0 font-mono ${isEligible ? 'bg-fuchsia-500/30 text-fuchsia-200 border border-fuchsia-400/40' : 'bg-red-500/30 text-red-200 border border-red-400/40'
                     }`}>
                     {isCheckingBalance ? 'VERIFYING' : isEligible ? 'WITHDRAWAL UNLOCKED' : 'LOCKED'}
                   </span>
@@ -292,8 +293,8 @@ export default function WithdrawPage() {
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
 
               {/* Input Coins */}
-              <div className="bg-[#0a0802] border border-yellow-500/20 rounded-2xl p-4 space-y-2">
-                <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
+              <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
+                <label className="text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
                   <CoinIcon className="w-4 h-4" /> COINS TO WITHDRAW (MIN: 1,000)
                 </label>
                 <div className="flex items-center gap-2">
@@ -304,21 +305,21 @@ export default function WithdrawPage() {
                     step="100"
                     value={exchangeCoins}
                     onChange={(e) => setExchangeCoins(e.target.value)}
-                    className="w-full bg-transparent font-mono text-xl font-bold text-yellow-200 focus:outline-none placeholder-yellow-500/30"
+                    className="w-full bg-transparent font-mono text-xl font-bold text-purple-100 focus:outline-none placeholder-purple-500/30"
                     placeholder="1000"
                   />
                 </div>
               </div>
 
               {/* Estimated Token Output */}
-              <div className="bg-[#171206] border border-yellow-500/30 rounded-2xl p-4 space-y-2">
-                <label className="text-[10px] font-mono font-bold text-amber-400 uppercase tracking-wider flex items-center gap-1.5">
-                  <img src="/logo.jpeg" alt="$REAL" className="w-4 h-4 rounded-full object-cover border border-yellow-400/50" /> ESTIMATED $REAL TOKENS (10 COINS = 1 TOKEN)
+              <div className="bg-[#140b24] border border-purple-500/30 rounded-2xl p-4 space-y-2">
+                <label className="text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
+                  <img src="/logo.jpeg" alt="$RWD" className="w-4 h-4 rounded-full object-cover border border-fuchsia-400/50" /> ESTIMATED $RWD TOKENS (10 COINS = 1 TOKEN)
                 </label>
                 <div className="flex items-center gap-2">
-                  <img src="/logo.jpeg" alt="$REAL" className="w-6 h-6 rounded-full object-cover border border-yellow-400/50" />
-                  <span className="font-mono text-xl font-extrabold text-yellow-300 flex items-center gap-1.5">
-                    {estimatedTokens.toLocaleString()} <span className="text-xs text-amber-400">$REAL</span>
+                  <img src="/logo.jpeg" alt="$RWD" className="w-6 h-6 rounded-full object-cover border border-fuchsia-400/50" />
+                  <span className="font-mono text-xl font-extrabold text-fuchsia-300 flex items-center gap-1.5">
+                    {estimatedTokens.toLocaleString()} <span className="text-xs text-purple-300">$RWD</span>
                   </span>
                 </div>
               </div>
@@ -347,24 +348,24 @@ export default function WithdrawPage() {
                   initial={{ opacity: 0, y: -5 }}
                   animate={{ opacity: 1, y: 0 }}
                   exit={{ opacity: 0 }}
-                  className="p-5 bg-yellow-500/10 border border-yellow-500/40 rounded-2xl space-y-2 text-xs font-mono text-yellow-300"
+                  className="p-5 bg-purple-500/15 border border-purple-500/40 rounded-2xl space-y-2 text-xs font-mono text-purple-200"
                 >
-                  <div className="flex items-center gap-2 text-yellow-400 font-bold font-press-start text-[11px]">
-                    <CheckCircle2 className="w-4 h-4 text-yellow-400" /> WITHDRAWAL SUCCESSFUL!
+                  <div className="flex items-center gap-2 text-fuchsia-300 font-bold font-press-start text-[11px]">
+                    <CheckCircle2 className="w-4 h-4 text-fuchsia-400" /> WITHDRAWAL SUCCESSFUL!
                   </div>
                   <p>
-                    Exchanged <span className="font-bold text-yellow-300">{txSuccess.coinsExchanged}</span> coins for{' '}
-                    <span className="font-bold text-yellow-300">
-                      {txSuccess.payoutAmount ?? txSuccess.tokensPaid} {txSuccess.payoutAsset || '$REAL'}
+                    Exchanged <span className="font-bold text-fuchsia-300">{txSuccess.coinsExchanged}</span> coins for{' '}
+                    <span className="font-bold text-fuchsia-300">
+                      {txSuccess.payoutAmount ?? txSuccess.tokensPaid} {txSuccess.payoutAsset || '$RWD'}
                     </span>.
                   </p>
-                  <div className="pt-1 flex items-center gap-1 text-[10px] text-amber-400 font-mono">
+                  <div className="pt-1 flex items-center gap-1 text-[10px] text-purple-300 font-mono">
                     <span>Transaction Signature:</span>
                     <a
                       href={`https://explorer.solana.com/tx/${txSuccess.txSignature}?cluster=mainnet`}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="underline flex items-center gap-1 text-yellow-200 hover:text-white font-bold"
+                      className="underline flex items-center gap-1 text-fuchsia-300 hover:text-white font-bold"
                     >
                       {txSuccess.txSignature.slice(0, 12)}... <ExternalLink className="w-3 h-3" />
                     </a>
@@ -378,11 +379,11 @@ export default function WithdrawPage() {
               type="submit"
               disabled={isSubmitting || coinsNum < 1000 || coinsNum > bankCoins || !address || !isEligible || isCheckingBalance}
               className={`w-full py-4 font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${!address
-                  ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] cursor-pointer'
+                  ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer'
                   : isCheckingBalance
-                    ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 cursor-wait animate-pulse'
+                    ? 'bg-purple-500/20 text-fuchsia-300 border-purple-500/40 cursor-wait animate-pulse'
                     : isEligible
-                      ? 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 hover:from-amber-400 hover:to-yellow-300 text-[#0a0802] border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.4)] hover:shadow-[0_0_35px_rgba(234,179,8,0.7)] cursor-pointer'
+                      ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 hover:from-purple-500 hover:to-fuchsia-400 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer'
                       : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
                 }`}
             >
@@ -392,49 +393,49 @@ export default function WithdrawPage() {
                 : !address
                   ? 'CONNECT WALLET TO WITHDRAW'
                   : isCheckingBalance
-                    ? 'VERIFYING $REAL BALANCE...'
+                    ? 'VERIFYING $RWD BALANCE...'
                     : isEligible
                       ? 'EXCHANGE & WITHDRAW NOW'
-                      : `LOCKED (NEED ${MIN_REAL_REQUIRED.toLocaleString()} $REAL)`}
+                      : `LOCKED (NEED ${MIN_REAL_REQUIRED.toLocaleString()} $RWD)`}
             </button>
           </form>
         </div>
 
         {/* Withdrawal History */}
-        <div className="bg-[#120d04] border border-yellow-500/20 rounded-3xl p-6 sm:p-8 space-y-4">
-          <div className="flex items-center justify-between pb-2 border-b border-yellow-500/15">
-            <h3 className="text-xs font-bold font-press-start text-amber-400 flex items-center gap-2">
-              <Clock className="w-4 h-4" /> YOUR WITHDRAWAL HISTORY
+        <div className="bg-[#120722] border border-purple-500/25 rounded-3xl p-6 sm:p-8 space-y-4">
+          <div className="flex items-center justify-between pb-2 border-b border-purple-500/20">
+            <h3 className="text-xs font-bold font-press-start text-purple-200 flex items-center gap-2">
+              <Clock className="w-4 h-4 text-fuchsia-400" /> YOUR WITHDRAWAL HISTORY
             </h3>
-            <ShieldCheck className="w-4 h-4 text-yellow-500/60" />
+            <ShieldCheck className="w-4 h-4 text-fuchsia-400" />
           </div>
 
           {!address ? (
-            <p className="text-xs font-mono text-amber-200/50 py-6 text-center">Connect wallet to view your personal withdrawal history.</p>
+            <p className="text-xs font-mono text-purple-300/50 py-6 text-center">Connect wallet to view your personal withdrawal history.</p>
           ) : isLoadingHistory ? (
-            <p className="text-xs font-mono text-amber-400/80 py-6 text-center animate-pulse">Loading withdrawal records...</p>
+            <p className="text-xs font-mono text-purple-400/80 py-6 text-center animate-pulse">Loading withdrawal records...</p>
           ) : history.length === 0 ? (
-            <p className="text-xs font-mono text-amber-200/50 py-6 text-center">No withdrawals made yet.</p>
+            <p className="text-xs font-mono text-purple-300/50 py-6 text-center">No withdrawals made yet.</p>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-left text-xs font-mono">
                 <thead>
-                  <tr className="text-amber-400/70 border-b border-yellow-500/10 text-[10px] uppercase">
+                  <tr className="text-purple-300/70 border-b border-purple-500/15 text-[10px] uppercase">
                     <th className="pb-3">COINS EXCHANGED</th>
                     <th className="pb-3">PAYOUT RECEIVED</th>
                     <th className="pb-3">STATUS</th>
                     <th className="pb-3 text-right">SOLANA TX</th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-yellow-500/10">
+                <tbody className="divide-y divide-purple-500/10">
                   {history.map((rec) => (
-                    <tr key={rec.id} className="hover:bg-yellow-500/5 transition-colors">
-                      <td className="py-3 font-bold text-yellow-300">{rec.coinsAmount} COINS</td>
-                      <td className="py-3 font-bold text-amber-400">
-                        {rec.payoutAmount ?? rec.tokensAmount} {rec.payoutAsset || '$REAL'}
+                    <tr key={rec.id} className="hover:bg-purple-500/10 transition-colors">
+                      <td className="py-3 font-bold text-fuchsia-300">{rec.coinsAmount} COINS</td>
+                      <td className="py-3 font-bold text-purple-200">
+                        {rec.payoutAmount ?? rec.tokensAmount} {rec.payoutAsset || '$RWD'}
                       </td>
                       <td className="py-3">
-                        <span className="px-2 py-0.5 rounded-full text-[9px] bg-yellow-500/20 text-yellow-300 font-bold border border-yellow-500/30">
+                        <span className="px-2 py-0.5 rounded-full text-[9px] bg-purple-500/20 text-fuchsia-300 font-bold border border-purple-500/40">
                           {rec.status}
                         </span>
                       </td>
@@ -443,7 +444,7 @@ export default function WithdrawPage() {
                           href={`https://explorer.solana.com/tx/${rec.txSignature}?cluster=mainnet`}
                           target="_blank"
                           rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1 text-amber-400 hover:text-yellow-200 underline font-bold text-[11px]"
+                          className="inline-flex items-center gap-1 text-fuchsia-400 hover:text-white underline font-bold text-[11px]"
                         >
                           {rec.txSignature.slice(0, 8)}... <ExternalLink className="w-3 h-3" />
                         </a>

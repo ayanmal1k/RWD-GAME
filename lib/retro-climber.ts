@@ -605,14 +605,8 @@ export class GameEngine {
         e.preventDefault(); // Stop page scrolling
       }
 
-      // Start game only through UI button now
-      if (this.state === 'START') {
-        return;
-      }
-
-      // Retry game on any key press after game over
-      if (this.state === 'GAME_OVER') {
-        this.startGame();
+      // Start/restart game handled through React UI and space listener
+      if (this.state === 'START' || this.state === 'GAME_OVER') {
         return;
       }
 

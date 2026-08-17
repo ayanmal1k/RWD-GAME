@@ -281,7 +281,12 @@ export default function Home() {
 
   useEffect(() => {
     const handleSpaceStart = (e: KeyboardEvent) => {
-      if (e.code === 'Space' && gameState === 'START' && !showHistoryModal && !showLeaderboardModal) {
+      if (
+        e.code === 'Space' &&
+        (gameState === 'START' || gameState === 'GAME_OVER') &&
+        !showHistoryModal &&
+        !showLeaderboardModal
+      ) {
         e.preventDefault();
         handlePlayClick();
       }
@@ -536,15 +541,97 @@ export default function Home() {
               </div>
             )}
 
-            {/* GAME OVER OVERLAY */}
+            {/* GAME OVER (FELL) OVERLAY */}
             {gameState === 'GAME_OVER' && (
-              <div className="absolute inset-0 bg-[#0a0802]/95 flex flex-col items-center justify-center p-6 text-center text-white z-40">
-                <h2 className="text-xl font-extrabold font-press-start text-red-500 mb-2 drop-shadow-md">FELL!</h2>
-                <p className="text-[10px] font-press-start text-amber-400 mt-1 mb-1">SCORE: {score}</p>
-                <p className="text-[10px] font-press-start text-yellow-300 mb-4">COINS: {coins}</p>
-                <div className="flex gap-2 mb-3">
-                  <button onClick={handleStartRestart} className="px-5 py-2.5 bg-gradient-to-r from-amber-500 to-yellow-400 text-[#0a0802] font-bold font-press-start text-[10px] rounded-xl border-2 border-yellow-300/50 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all">TRY AGAIN</button>
-                  <button onClick={handleOpenHistory} className="px-4 py-2.5 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-[10px] rounded-xl border border-yellow-500/40 shadow-lg cursor-pointer transform hover:scale-105 active:scale-95 transition-all flex items-center gap-1.5"><History className="w-3.5 h-3.5 text-amber-400" /> HISTORY</button>
+              <div
+                className="absolute inset-0 bg-[#0a0802]/95 flex flex-col items-center justify-center p-3 sm:p-6 text-center text-white z-40 overflow-y-auto [&::-webkit-scrollbar]:hidden"
+                style={{ scrollbarWidth: 'none', msOverflowStyle: 'none' }}
+              >
+                <h2 className="text-2xl sm:text-3xl font-extrabold font-press-start text-red-500 mb-1 drop-shadow-[0_0_12px_rgba(239,68,68,0.6)] animate-pulse">
+                  FELL!
+                </h2>
+
+                <div className="flex items-center gap-3 my-2 text-xs font-press-start">
+                  <div className="flex items-center gap-1.5 bg-[#171206] px-3 py-1.5 rounded-xl border border-amber-500/30">
+                    <span className="text-amber-400/80 text-[9px]">SCORE:</span>
+                    <span className="text-yellow-300 font-extrabold">{score}</span>
+                  </div>
+                  <div className="flex items-center gap-1.5 bg-[#171206] px-3 py-1.5 rounded-xl border border-amber-500/30">
+                    <CoinIcon className="w-4 h-4" />
+                    <span className="text-yellow-300 font-extrabold">{coins}</span>
+                  </div>
+                </div>
+
+                {/* Large Character Idle Preview */}
+                <div className="relative w-16 h-16 sm:w-20 sm:h-20 mb-2 shrink-0">
+                  <img
+                    src={selectedCharacter ? CHARACTERS[selectedCharacter].idleSrc : '/characters/red/5.png'}
+                    alt="Character Idle"
+                    className="w-full h-full object-contain pixelated animate-breathe drop-shadow-[0_0_12px_rgba(250,204,21,0.3)]"
+                  />
+                  <div className="absolute -bottom-1.5 left-1/2 -translate-x-1/2 w-10 sm:w-12 h-2 bg-black/60 rounded-[50%] blur-sm animate-shadow-breathe"></div>
+                </div>
+
+                {/* CHARACTER SELECTOR (No names, idle preview with click to select) */}
+                <div className="w-full max-w-sm mb-3 sm:mb-4 shrink-0">
+                  <div className="flex items-center justify-center gap-1.5 mb-1.5">
+                    <span className="text-[8px] sm:text-[9px] font-press-start text-amber-400 tracking-wider uppercase">
+                      CHOOSE CLIMBER
+                    </span>
+                    <span className="text-[8px] font-mono text-amber-200/50">
+                      ({selectedCharacter ? 'SELECTED' : 'RANDOM ON RETRY'})
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-4 gap-2 sm:gap-2.5">
+                    {CHARACTER_LIST.map((char) => {
+                      const isSelected = selectedCharacter === char.id;
+                      return (
+                        <button
+                          key={char.id}
+                          type="button"
+                          onClick={() => setSelectedCharacter(char.id)}
+                          className={`relative p-1.5 sm:p-2 rounded-2xl border-2 transition-all duration-200 flex flex-col items-center justify-center cursor-pointer group ${
+                            isSelected
+                              ? 'bg-gradient-to-b from-amber-500/30 to-yellow-500/15 border-yellow-400 shadow-[0_0_18px_rgba(250,204,21,0.6)] scale-105 ring-2 ring-yellow-400/80'
+                              : 'bg-[#140f05]/90 border-yellow-500/25 hover:border-yellow-400/60 hover:bg-yellow-500/10 hover:scale-105'
+                          }`}
+                          title="Click to select"
+                        >
+                          <div className="w-10 h-10 sm:w-12 sm:h-12 relative flex items-center justify-center">
+                            <img
+                              src={char.idleSrc}
+                              alt="Climber"
+                              className={`w-full h-full object-contain pixelated transition-transform duration-200 ${
+                                isSelected ? 'animate-breathe scale-110 drop-shadow-[0_0_8px_rgba(250,204,21,0.6)]' : 'opacity-80 group-hover:opacity-100 group-hover:scale-105'
+                              }`}
+                            />
+                          </div>
+                          {isSelected && (
+                            <div className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-yellow-400 text-black rounded-full flex items-center justify-center text-[8px] font-black shadow-[0_0_8px_rgba(250,204,21,0.9)]">
+                              ✓
+                            </div>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                </div>
+
+                {/* ACTION BUTTONS */}
+                <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-sm justify-center shrink-0">
+                  <button
+                    onClick={handlePlayClick}
+                    className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 text-[#0a0802] font-extrabold font-press-start text-[10px] rounded-2xl border-2 border-yellow-300 shadow-[0_0_25px_rgba(234,179,8,0.5)] hover:shadow-[0_0_35px_rgba(234,179,8,0.8)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                  >
+                    TRY AGAIN [SPACE]
+                  </button>
+                  <button
+                    onClick={handleOpenHistory}
+                    className="w-full sm:w-auto px-4 py-3 bg-[#171206] hover:bg-[#261e0b] text-yellow-300 font-bold font-press-start text-[10px] rounded-2xl border border-yellow-500/40 flex items-center justify-center gap-1.5 cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
+                  >
+                    <History className="w-3.5 h-3.5 text-amber-400" />
+                    HISTORY
+                  </button>
                 </div>
               </div>
             )}

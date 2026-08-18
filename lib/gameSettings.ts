@@ -18,8 +18,8 @@ import { doc, getDoc, setDoc, serverTimestamp } from 'firebase/firestore';
 
 export interface GameSettings {
   gameFeeAmount: number;
-  minRwdRequired: number;       // Devnet: raw token balance required
-  minRwdUsdRequired: number;    // Mainnet: minimum USD value required (e.g. $10)
+  minRwdRequired: number;       // Unified threshold: USD value on Mainnet (e.g. $10), token count on Devnet (e.g. 10 tokens)
+  minRwdUsdRequired?: number;   // Alias for minRwdRequired on Mainnet
   coinsPerToken: number;
   minWithdrawCoins: number;
   leaderboardEnabled: boolean;
@@ -29,8 +29,8 @@ export interface GameSettings {
 
 export const DEFAULT_GAME_SETTINGS: GameSettings = {
   gameFeeAmount: Number(process.env.GAME_FEE_AMOUNT || process.env.NEXT_PUBLIC_GAME_FEE_AMOUNT || 10),
-  minRwdRequired: Number(process.env.NEXT_PUBLIC_MIN_RWD_REQUIRED ?? process.env.NEXT_PUBLIC_MIN_REAL_REQUIRED ?? 0),
-  minRwdUsdRequired: Number(process.env.NEXT_PUBLIC_MIN_RWD_USD_REQUIRED ?? 10),
+  minRwdRequired: Number(process.env.NEXT_PUBLIC_MIN_RWD_REQUIRED ?? process.env.NEXT_PUBLIC_MIN_REAL_REQUIRED ?? 10),
+  minRwdUsdRequired: Number(process.env.NEXT_PUBLIC_MIN_RWD_REQUIRED ?? 10),
   coinsPerToken: 10,
   minWithdrawCoins: 1000,
   leaderboardEnabled: true,
@@ -48,10 +48,14 @@ export async function getGameSettings(): Promise<GameSettings> {
 
     if (snap.exists()) {
       const data = snap.data();
+      const rawMin = typeof data.minRwdRequired === 'number'
+        ? data.minRwdRequired
+        : (typeof data.minRwdUsdRequired === 'number' ? data.minRwdUsdRequired : DEFAULT_GAME_SETTINGS.minRwdRequired);
+
       return {
         gameFeeAmount: typeof data.gameFeeAmount === 'number' ? data.gameFeeAmount : DEFAULT_GAME_SETTINGS.gameFeeAmount,
-        minRwdRequired: typeof data.minRwdRequired === 'number' ? data.minRwdRequired : DEFAULT_GAME_SETTINGS.minRwdRequired,
-        minRwdUsdRequired: typeof data.minRwdUsdRequired === 'number' ? data.minRwdUsdRequired : DEFAULT_GAME_SETTINGS.minRwdUsdRequired,
+        minRwdRequired: rawMin,
+        minRwdUsdRequired: rawMin,
         coinsPerToken: typeof data.coinsPerToken === 'number' && data.coinsPerToken > 0 ? data.coinsPerToken : DEFAULT_GAME_SETTINGS.coinsPerToken,
         minWithdrawCoins: typeof data.minWithdrawCoins === 'number' && data.minWithdrawCoins >= 0 ? data.minWithdrawCoins : DEFAULT_GAME_SETTINGS.minWithdrawCoins,
         leaderboardEnabled: data.leaderboardEnabled !== undefined ? Boolean(data.leaderboardEnabled) : DEFAULT_GAME_SETTINGS.leaderboardEnabled,

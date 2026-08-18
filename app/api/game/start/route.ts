@@ -110,32 +110,28 @@ export async function POST(request: Request) {
     }
 
     // Dynamic Minimum RWD Holding Check (USD value on Mainnet, raw tokens on Devnet)
-    if (isMainnet) {
-      if (gameSettings.minRwdUsdRequired > 0) {
-        const { fetchRwdTokenBalance } = await import('@/lib/solana');
+    const requiredHolding = gameSettings.minRwdRequired;
+    if (requiredHolding > 0) {
+      const { fetchRwdTokenBalance } = await import('@/lib/solana');
+      const rwdBalance = await fetchRwdTokenBalance(walletAddress, connection);
+
+      if (isMainnet) {
         const { fetchRwdTokenPriceUsd } = await import('@/lib/tokenPrice');
-        const [rwdBalance, tokenPrice] = await Promise.all([
-          fetchRwdTokenBalance(walletAddress, connection),
-          fetchRwdTokenPriceUsd(),
-        ]);
+        const tokenPrice = await fetchRwdTokenPriceUsd();
         const userUsdValue = rwdBalance * tokenPrice;
-        if (userUsdValue < gameSettings.minRwdUsdRequired) {
+        if (userUsdValue < requiredHolding) {
           return NextResponse.json(
             {
-              error: `Access Denied: Wallet must hold at least $${gameSettings.minRwdUsdRequired.toFixed(2)} USD worth of $RWD tokens to play. Current holdings: $${userUsdValue.toFixed(2)} USD (${rwdBalance.toLocaleString()} $RWD @ $${tokenPrice.toFixed(8)}).`
+              error: `Access Denied: Wallet must hold at least $${requiredHolding.toFixed(2)} USD worth of $RWD tokens to play. Current holdings: $${userUsdValue.toFixed(2)} USD (${rwdBalance.toLocaleString()} $RWD @ $${tokenPrice.toFixed(8)}).`
             },
             { status: 403 }
           );
         }
-      }
-    } else {
-      if (gameSettings.minRwdRequired > 0) {
-        const { fetchRwdTokenBalance } = await import('@/lib/solana');
-        const rwdBalance = await fetchRwdTokenBalance(walletAddress, connection);
-        if (rwdBalance < gameSettings.minRwdRequired) {
+      } else {
+        if (rwdBalance < requiredHolding) {
           return NextResponse.json(
             {
-              error: `Access Denied: Wallet must hold at least ${gameSettings.minRwdRequired.toLocaleString()} $RWD tokens to play on Devnet. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
+              error: `Access Denied: Wallet must hold at least ${requiredHolding.toLocaleString()} $RWD tokens to play on Devnet. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
             },
             { status: 403 }
           );

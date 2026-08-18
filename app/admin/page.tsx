@@ -506,47 +506,28 @@ export default function AdminPage() {
                     </p>
                   </div>
 
-                  {/* 2. Mainnet: Minimum $RWD Holdings in USD ($) */}
+                  {/* 2. Unified Minimum $RWD Holdings Required to Play */}
                   <div className="bg-[#07030e] border border-fuchsia-500/30 rounded-2xl p-4 space-y-2 shadow-[0_0_15px_rgba(217,70,239,0.1)]">
                     <label className="text-[10px] font-mono font-bold text-fuchsia-300 uppercase flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-fuchsia-400" /> MAINNET: MIN $RWD HOLDING ($ USD VALUE)
+                      <ShieldCheck className="w-3.5 h-3.5 text-fuchsia-400" /> MIN $RWD HOLDING REQUIRED TO PLAY
                     </label>
                     <input
                       type="number"
                       min="0"
                       step="1"
-                      value={minRwdUsdRequired}
-                      onChange={(e) => setMinRwdUsdRequired(Number(e.target.value))}
+                      value={minRwdRequired}
+                      onChange={(e) => setMinRwdRequired(Number(e.target.value))}
                       required
                       className="w-full bg-transparent font-mono text-base font-bold text-fuchsia-200 focus:outline-none"
                       placeholder="10"
                     />
-                    <p className="text-[9px] font-mono text-fuchsia-300/60">
-                      On Mainnet, user wallet must hold at least this USD value worth of $RWD (checked live via DexScreener).
+                    <p className="text-[9px] font-mono text-fuchsia-300/70">
+                      <strong>Mainnet:</strong> checked as <strong>${minRwdRequired} USD worth</strong> of $RWD (via DexScreener).<br/>
+                      <strong>Devnet:</strong> checked as <strong>{minRwdRequired} raw $RWD tokens</strong>.
                     </p>
                   </div>
 
-                  {/* 3. Devnet: Minimum $RWD Holdings (Tokens) */}
-                  <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
-                    <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-purple-400" /> DEVNET: MIN $RWD HOLDING (RAW TOKENS)
-                    </label>
-                    <input
-                      type="number"
-                      min="0"
-                      step="10"
-                      value={minRwdRequired}
-                      onChange={(e) => setMinRwdRequired(Number(e.target.value))}
-                      required
-                      className="w-full bg-transparent font-mono text-base font-bold text-purple-100 focus:outline-none"
-                      placeholder="0"
-                    />
-                    <p className="text-[9px] font-mono text-purple-400/60">
-                      On Devnet, minimum $RWD raw tokens required to play (0 = no minimum).
-                    </p>
-                  </div>
-
-                  {/* 4. Coin-to-Token Exchange Rate */}
+                  {/* 3. Coin-to-Token Exchange Rate */}
                   <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
                     <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" /> COINS PER 1 $RWD TOKEN (EXCHANGE RATE)
@@ -652,7 +633,7 @@ export default function AdminPage() {
                   <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
                   <div className="space-y-0.5">
                     <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Mainnet Gate</span>
-                    <span className="font-press-start text-xs text-fuchsia-300">{minRwdUsdRequired > 0 ? `$${minRwdUsdRequired.toFixed(2)} USD` : 'No Min'}</span>
+                    <span className="font-press-start text-xs text-fuchsia-300">{minRwdRequired > 0 ? `$${minRwdRequired.toFixed(2)} USD` : 'No Min'}</span>
                   </div>
                   <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
                   <div className="space-y-0.5">

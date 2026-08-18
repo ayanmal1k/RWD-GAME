@@ -33,30 +33,27 @@ export async function POST(request: Request) {
     const gameSettings = await getGameSettings();
 
     // Verify $RWD token balance on-chain (USD on Mainnet, raw tokens on Devnet)
-    if (isMainnet) {
-      if (gameSettings.minRwdUsdRequired > 0) {
+    const requiredHolding = gameSettings.minRwdRequired;
+    if (requiredHolding > 0) {
+      const rwdBalance = await fetchRealTokenBalance(userAddress);
+
+      if (isMainnet) {
         const { fetchRwdTokenPriceUsd } = await import('@/lib/tokenPrice');
-        const [rwdBalance, tokenPrice] = await Promise.all([
-          fetchRealTokenBalance(userAddress),
-          fetchRwdTokenPriceUsd(),
-        ]);
+        const tokenPrice = await fetchRwdTokenPriceUsd();
         const userUsdValue = rwdBalance * tokenPrice;
-        if (userUsdValue < gameSettings.minRwdUsdRequired) {
+        if (userUsdValue < requiredHolding) {
           return NextResponse.json(
             {
-              error: `Access Denied: You must hold at least $${gameSettings.minRwdUsdRequired.toFixed(2)} USD worth of $RWD tokens in your wallet to withdraw. Current value: $${userUsdValue.toFixed(2)} USD (${rwdBalance.toLocaleString()} $RWD @ $${tokenPrice.toFixed(8)}).`
+              error: `Access Denied: You must hold at least $${requiredHolding.toFixed(2)} USD worth of $RWD tokens in your wallet to withdraw. Current value: $${userUsdValue.toFixed(2)} USD (${rwdBalance.toLocaleString()} $RWD @ $${tokenPrice.toFixed(8)}).`
             },
             { status: 403 }
           );
         }
-      }
-    } else {
-      if (gameSettings.minRwdRequired > 0) {
-        const rwdBalance = await fetchRealTokenBalance(userAddress);
-        if (rwdBalance < gameSettings.minRwdRequired) {
+      } else {
+        if (rwdBalance < requiredHolding) {
           return NextResponse.json(
             {
-              error: `Access Denied: You must hold at least ${gameSettings.minRwdRequired.toLocaleString()} $RWD tokens in your wallet to withdraw on Devnet. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
+              error: `Access Denied: You must hold at least ${requiredHolding.toLocaleString()} $RWD tokens in your wallet to withdraw on Devnet. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
             },
             { status: 403 }
           );

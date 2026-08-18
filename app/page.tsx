@@ -480,8 +480,8 @@ export default function Home() {
                             {isCheckingBalance
                               ? 'Fetching $RWD Balance & Price...'
                               : isMainnet
-                                ? MIN_USD_REQUIRED > 0
-                                  ? `$${userBalanceUsd.toFixed(2)} / $${MIN_USD_REQUIRED.toFixed(2)} USD (${(realBalance ?? 0).toLocaleString()} $RWD)`
+                                ? MIN_HOLDING_REQUIRED > 0
+                                  ? `$${userBalanceUsd.toFixed(2)} / $${MIN_HOLDING_REQUIRED.toFixed(2)} USD (${(realBalance ?? 0).toLocaleString()} $RWD)`
                                   : `$${userBalanceUsd.toFixed(2)} USD (No Min Required)`
                                 : MIN_HOLDING_REQUIRED > 0
                                   ? `${(realBalance ?? 0).toLocaleString()} / ${MIN_HOLDING_REQUIRED.toLocaleString()} $RWD`

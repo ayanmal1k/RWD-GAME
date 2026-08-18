@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { DynamicContextProvider, useDynamicContext } from '@dynamic-labs/sdk-react-core';
-import { SolanaWalletConnectors } from '@dynamic-labs/solana';
+import { SolanaWalletConnectors, isSolanaWallet } from '@dynamic-labs/solana';
 
 import { useRealTokenBalance } from '@/hooks/useRealTokenBalance';
 
@@ -65,11 +65,15 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
   let dynamicWalletAddress: string | null = null;
   let dynamicSetShowAuthFlow: ((show: boolean) => void) | null = null;
   let dynamicHandleLogOut: (() => Promise<void>) | null = null;
+  let dynamicPrimaryWallet: any = null;
+
+  const dynamicPrimaryWalletRef = React.useRef<any>(null);
 
   try {
     const dyn = useDynamicContext();
     if (dyn && dyn.primaryWallet?.address) {
       dynamicWalletAddress = dyn.primaryWallet.address;
+      dynamicPrimaryWallet = dyn.primaryWallet;
     }
     if (dyn && dyn.setShowAuthFlow) {
       dynamicSetShowAuthFlow = dyn.setShowAuthFlow;
@@ -81,13 +85,21 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
     // Dynamic context not available or error
   }
 
+  // Always keep the ref updated with the latest dynamicPrimaryWallet
+  useEffect(() => {
+    dynamicPrimaryWalletRef.current = dynamicPrimaryWallet;
+  }, [dynamicPrimaryWallet]);
+
   // Restore saved native wallet connection from localStorage
+  // Only do this when Dynamic SDK is NOT configured — Dynamic handles its own reconnection.
   useEffect(() => {
     if (typeof window === 'undefined') return;
+    // If Dynamic SDK is available, skip native auto-reconnect — Dynamic manages sessions.
+    if (dynamicSetShowAuthFlow) return;
+
     const saved = localStorage.getItem('real_climber_native_wallet');
     if (saved) {
       setNativeAddress(saved);
-      // Auto reconnect phantom if available
       const solana = (window as any).solana || (window as any).phantom?.solana;
       if (solana && solana.isPhantom) {
         solana.connect({ onlyIfTrusted: true })
@@ -131,29 +143,42 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
       const messageToSign = challengeData.message || nonce;
 
       // Step 2: Sign the user-friendly message with the wallet
-      const provider = getWalletProvider();
-      if (!provider) {
-        throw new Error('No wallet provider available for signing');
-      }
-
-      // Encode the message as bytes for signing
-      const messageBytes = new TextEncoder().encode(messageToSign);
       let signatureBase64: string;
 
-      if (provider.signMessage) {
-        // Phantom / Solflare signMessage returns { signature: Uint8Array }
-        const result = await provider.signMessage(messageBytes, 'utf8');
-        const sigBytes = result.signature || result;
-
-        if (sigBytes instanceof Uint8Array) {
-          signatureBase64 = btoa(String.fromCharCode(...sigBytes));
-        } else if (typeof sigBytes === 'string') {
-          signatureBase64 = sigBytes;
-        } else {
-          throw new Error('Unexpected signature format');
+      // Use Dynamic wallet's connector for signing when available.
+      // This ensures we sign with the wallet the user actually selected
+      // (Trust, Phantom, Solflare, etc.) instead of always using window.solana.
+      const currentDynamicWallet = dynamicPrimaryWalletRef.current;
+      if (currentDynamicWallet && isSolanaWallet(currentDynamicWallet)) {
+        const connector = currentDynamicWallet.connector;
+        const sig = await connector.signMessage(messageToSign);
+        if (!sig) {
+          throw new Error('Wallet signing returned empty result');
         }
+        signatureBase64 = sig;
       } else {
-        throw new Error('Wallet does not support message signing');
+        // Fallback to native browser wallet provider (no Dynamic wallet connected)
+        const provider = getWalletProvider();
+        if (!provider) {
+          throw new Error('No wallet provider available for signing');
+        }
+
+        const messageBytes = new TextEncoder().encode(messageToSign);
+
+        if (provider.signMessage) {
+          const result = await provider.signMessage(messageBytes, 'utf8');
+          const sigBytes = result.signature || result;
+
+          if (sigBytes instanceof Uint8Array) {
+            signatureBase64 = btoa(String.fromCharCode(...sigBytes));
+          } else if (typeof sigBytes === 'string') {
+            signatureBase64 = sigBytes;
+          } else {
+            throw new Error('Unexpected signature format');
+          }
+        } else {
+          throw new Error('Wallet does not support message signing');
+        }
       }
 
       // Step 3: Submit signature for verification
@@ -250,7 +275,14 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
 
   const setShowAuthFlow = (show: boolean) => {
     if (show) {
-      connectNativeSolana();
+      // Always show Dynamic's wallet selection modal when available,
+      // instead of directly connecting to a cached/available extension wallet.
+      if (dynamicSetShowAuthFlow) {
+        dynamicSetShowAuthFlow(true);
+      } else {
+        // Fallback to native connection only if Dynamic is not configured.
+        connectNativeSolana();
+      }
     }
   };
 

@@ -481,7 +481,7 @@ export default function Home() {
                               ? 'Fetching $RWD Balance & Price...'
                               : isMainnet
                                 ? MIN_HOLDING_REQUIRED > 0
-                                  ? `$${userBalanceUsd.toFixed(2)} / $${MIN_HOLDING_REQUIRED.toFixed(2)} USD (${(realBalance ?? 0).toLocaleString()} $RWD)`
+                                  ? `$${userBalanceUsd.toFixed(2)} / $${MIN_HOLDING_REQUIRED.toFixed(2)} USD (${(realBalance ?? 0).toLocaleString()} / ${tokenPriceUsd > 0 ? Math.ceil(MIN_HOLDING_REQUIRED / tokenPriceUsd).toLocaleString() : '...'} $RWD)`
                                   : `$${userBalanceUsd.toFixed(2)} USD (No Min Required)`
                                 : MIN_HOLDING_REQUIRED > 0
                                   ? `${(realBalance ?? 0).toLocaleString()} / ${MIN_HOLDING_REQUIRED.toLocaleString()} $RWD`

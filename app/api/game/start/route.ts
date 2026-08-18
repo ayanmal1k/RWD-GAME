@@ -233,20 +233,29 @@ async function verifyPaymentTransaction(
   expectedMint: string,
   expectedFeeTokens: number
 ): Promise<VerificationResult> {
-  // Fetch the parsed transaction with finalized commitment
-  let parsedTx: any;
-  try {
-    parsedTx = await connection.getParsedTransaction(txSignature, {
-      maxSupportedTransactionVersion: 0,
-      commitment: 'finalized',
-    });
-  } catch {
-    return { valid: false, reason: 'Failed to fetch transaction from Solana' };
+  // Fetch the parsed transaction with 'confirmed' commitment and retry polling
+  let parsedTx: any = null;
+  const maxAttempts = 8;
+  const delayMs = 1200;
+
+  for (let attempt = 1; attempt <= maxAttempts; attempt++) {
+    try {
+      parsedTx = await connection.getParsedTransaction(txSignature, {
+        maxSupportedTransactionVersion: 0,
+        commitment: 'confirmed',
+      });
+      if (parsedTx) break;
+    } catch {
+      // Ignore and retry
+    }
+    if (attempt < maxAttempts) {
+      await new Promise((r) => setTimeout(r, delayMs));
+    }
   }
 
   // Transaction must exist
   if (!parsedTx) {
-    return { valid: false, reason: 'Transaction not found. It may not be finalized yet. Please wait and try again.' };
+    return { valid: false, reason: 'Transaction not found on Solana cluster. It may take a few seconds to confirm. Please try again.' };
   }
 
   // Transaction must have succeeded

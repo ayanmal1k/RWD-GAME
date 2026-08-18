@@ -148,7 +148,7 @@ export async function payGameFee(playerAddress: string): Promise<PayGameFeeResul
   );
 
   // Set recent blockhash and fee payer
-  const { blockhash } = await connection.getLatestBlockhash('confirmed');
+  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = playerPubKey;
 
@@ -164,6 +164,20 @@ export async function payGameFee(playerAddress: string): Promise<PayGameFeeResul
     txSignature = await connection.sendRawTransaction(signed.serialize());
   } else {
     throw new Error('Wallet does not support transaction signing.');
+  }
+
+  // Wait for the transaction to be confirmed on Solana
+  try {
+    const confirmation = await connection.confirmTransaction(
+      { signature: txSignature, blockhash, lastValidBlockHeight },
+      'confirmed'
+    );
+    if (confirmation.value.err) {
+      throw new Error(`Transaction failed on-chain: ${JSON.stringify(confirmation.value.err)}`);
+    }
+  } catch (err: any) {
+    // Even if confirmTransaction times out, return signature so server can verify
+    console.warn('confirmTransaction notice:', err?.message || err);
   }
 
   return { txSignature };

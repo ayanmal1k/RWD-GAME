@@ -13,9 +13,10 @@ import {
   TOKEN_2022_PROGRAM_ID
 } from '@solana/spl-token';
 
-import { fetchRealTokenBalance, MIN_REAL_REQUIRED } from '@/lib/solana';
+import { fetchRealTokenBalance, MIN_REAL_REQUIRED, RWD_TOKEN_MINT } from '@/lib/solana';
+import { getRwdMint } from '@/lib/auth';
 
-const TOKEN_MINT_ADDRESS = process.env.REAL_TOKEN_MINT_ADDRESS || process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS || 'BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv';
+const TOKEN_MINT_ADDRESS = getRwdMint() || RWD_TOKEN_MINT;
 
 export async function POST(request: Request) {
   try {
@@ -76,7 +77,8 @@ export async function POST(request: Request) {
 
     // Check if real Treasury Private Key exists in environment
     const treasuryKeySecret = process.env.TREASURY_SOLANA_PRIVATE_KEY;
-    const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+    const isMainnet = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' || process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta';
+    const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || (isMainnet ? 'https://api.mainnet-beta.solana.com' : 'https://api.devnet.solana.com');
 
     if (treasuryKeySecret && treasuryKeySecret.trim().length > 0) {
       try {

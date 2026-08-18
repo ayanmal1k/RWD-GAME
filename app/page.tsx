@@ -7,7 +7,7 @@ import { CoinIcon } from '@/components/CoinIcon';
 import { useAppWallet } from '@/components/DynamicProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
-import { MIN_REAL_REQUIRED } from '@/lib/solana';
+import { MIN_REAL_REQUIRED, RWD_TOKEN_MINT } from '@/lib/solana';
 import { payGameFee } from '@/lib/payGameFee';
 import {
   Pause,
@@ -478,7 +478,7 @@ export default function Home() {
 
                     {!isEligible && !isCheckingBalance && (
                       <a
-                        href={`https://pump.fun/coin/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS || 'EVNWDT4QtZv4tBGMaFpygGq8bxEEcZMUZxMmhtaspump'}`}
+                        href={`https://pump.fun/coin/${RWD_TOKEN_MINT}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 hover:from-purple-500 hover:to-fuchsia-400 text-white font-press-start text-[9px] sm:text-[10px] font-extrabold rounded-2xl border-2 border-fuchsia-300 shadow-[0_0_20px_rgba(168,85,247,0.6)] hover:shadow-[0_0_30px_rgba(217,70,239,0.9)] flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer tracking-wider"

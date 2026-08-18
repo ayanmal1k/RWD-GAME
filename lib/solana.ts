@@ -1,17 +1,21 @@
 import { Connection, PublicKey } from '@solana/web3.js';
 import { TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 
-const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+const isMainnet = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' || process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta';
+const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || (isMainnet ? 'https://api.mainnet-beta.solana.com' : 'https://api.devnet.solana.com');
 
 // Re-usable Solana connection configured with the environment RPC
 export const solanaConnection = new Connection(RPC_URL, 'confirmed');
 
 export const RWD_TOKEN_MINT =
+  (process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' || process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta'
+    ? process.env.NEXT_PUBLIC_RWD_MINT_MAINNET
+    : process.env.NEXT_PUBLIC_RWD_MINT_DEVNET) ||
   process.env.NEXT_PUBLIC_RWD_TOKEN_ADDRESS ||
   process.env.RWD_TOKEN_MINT_ADDRESS ||
   process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS ||
   process.env.REAL_TOKEN_MINT_ADDRESS ||
-  'BNyRLdnXZ2ZBhgR6AQiwrJrNCKh5WLGrhub5sPP4ZQmv';
+  '6m7z9mjuZdMJq4DG4ze6BQHCtjoBMowyE2QhudbpeGUa';
 
 export const REAL_TOKEN_MINT = RWD_TOKEN_MINT;
 

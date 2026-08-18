@@ -2,28 +2,32 @@
  * Client-side utility to build and send the 10 RWD token payment
  * transaction before starting a game.
  *
- * The player's connected wallet (Phantom/Solflare) signs and sends
- * the SPL token transfer. Returns the transaction signature for
- * server-side verification.
+ * Uses TransferChecked (includes mint + decimals in the instruction)
+ * for stronger server-side verification.
  */
 
 import { Connection, PublicKey, Transaction } from '@solana/web3.js';
 import {
   getAssociatedTokenAddress,
   createAssociatedTokenAccountInstruction,
-  createTransferInstruction,
+  createTransferCheckedInstruction,
   getMint,
   TOKEN_PROGRAM_ID,
   TOKEN_2022_PROGRAM_ID,
 } from '@solana/spl-token';
 
-/** Determine the treasury wallet for the current network. */
+/** Get the single treasury wallet that receives game fees. */
 function getTreasuryWallet(): string {
+  return process.env.NEXT_PUBLIC_GAME_FEE_WALLET || '';
+}
+
+/** Get the RWD token mint for the current network. */
+function getRwdMint(): string {
   const network = process.env.NEXT_PUBLIC_SOLANA_NETWORK || 'devnet';
   if (network === 'mainnet' || network === 'mainnet-beta') {
-    return process.env.NEXT_PUBLIC_GAME_FEE_WALLET_MAINNET || '';
+    return process.env.NEXT_PUBLIC_RWD_MINT_MAINNET || '';
   }
-  return process.env.NEXT_PUBLIC_GAME_FEE_WALLET_DEVNET || '';
+  return process.env.NEXT_PUBLIC_RWD_MINT_DEVNET || '';
 }
 
 /** Get the game fee amount in token units. */
@@ -31,18 +35,10 @@ function getGameFeeAmount(): number {
   return Number(process.env.NEXT_PUBLIC_GAME_FEE_AMOUNT || 10);
 }
 
-/** Get the RWD token mint address. */
-function getRwdMint(): string {
-  return (
-    process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS ||
-    process.env.NEXT_PUBLIC_RWD_TOKEN_ADDRESS ||
-    ''
-  );
-}
-
 /** Get the Solana RPC URL. */
 function getRpcUrl(): string {
-  return process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+  const isMainnet = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' || process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta';
+  return process.env.NEXT_PUBLIC_SOLANA_RPC_URL || (isMainnet ? 'https://api.mainnet-beta.solana.com' : 'https://api.devnet.solana.com');
 }
 
 /**
@@ -65,6 +61,7 @@ export interface PayGameFeeResult {
 
 /**
  * Build and send a 10 RWD token transfer from the player to the treasury wallet.
+ * Uses TransferChecked which embeds the mint and decimals in the instruction.
  *
  * @param playerAddress The player's wallet public key string.
  * @returns The transaction signature.
@@ -78,7 +75,7 @@ export async function payGameFee(playerAddress: string): Promise<PayGameFeeResul
 
   const rwdMintAddress = getRwdMint();
   if (!rwdMintAddress) {
-    throw new Error('RWD token mint address not configured.');
+    throw new Error('RWD token mint address not configured for current network.');
   }
 
   const feeAmount = getGameFeeAmount();
@@ -96,7 +93,7 @@ export async function payGameFee(playerAddress: string): Promise<PayGameFeeResul
   const treasuryPubKey = new PublicKey(treasuryAddress);
   const mintPubKey = new PublicKey(rwdMintAddress);
 
-  // Detect token program & decimals
+  // Detect token program & decimals from chain
   let tokenProgramId = TOKEN_PROGRAM_ID;
   let decimals = 6;
 
@@ -133,21 +130,25 @@ export async function payGameFee(playerAddress: string): Promise<PayGameFeeResul
     );
   }
 
-  // SPL Token Transfer: player → treasury
+  // SPL Token TransferChecked: player → treasury
+  // TransferChecked includes the mint and decimals in the instruction itself,
+  // which makes server-side verification stronger and more explicit.
   const rawAmount = BigInt(Math.round(feeAmount * (10 ** decimals)));
   transaction.add(
-    createTransferInstruction(
+    createTransferCheckedInstruction(
       sourceAta,       // Source ATA
+      mintPubKey,      // Mint (embedded in instruction)
       destAta,         // Destination ATA
       playerPubKey,    // Owner/authority of source
       rawAmount,       // Amount in raw units
+      decimals,        // Decimals (embedded in instruction)
       [],              // No multisig signers
       tokenProgramId
     )
   );
 
   // Set recent blockhash and fee payer
-  const { blockhash, lastValidBlockHeight } = await connection.getLatestBlockhash('confirmed');
+  const { blockhash } = await connection.getLatestBlockhash('confirmed');
   transaction.recentBlockhash = blockhash;
   transaction.feePayer = playerPubKey;
 

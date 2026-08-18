@@ -5,6 +5,7 @@ import { doc, getDoc, updateDoc, addDoc, collection, setDoc, serverTimestamp, in
 import {
   getAuthenticatedWallet,
   verifySessionToken,
+  calculateVerifiedReward,
 } from '@/lib/auth';
 
 /**
@@ -20,9 +21,9 @@ import {
  * 3. Verify session ownership (wallet matches)
  * 4. Verify session is ACTIVE
  * 5. Verify session not expired
- * 6. Verify HMAC token (constant-time)
- * 7. Anti-cheat validation
- * 8. Persist results
+ * 6. Verify HMAC token (constant-time, reconstructed — not read from DB)
+ * 7. Server-side reward calculation with hard caps
+ * 8. Persist results with server-calculated values
  */
 export async function POST(request: Request) {
   try {
@@ -72,7 +73,6 @@ export async function POST(request: Request) {
     // 5. VERIFY SESSION NOT EXPIRED
     const now = Date.now();
     if (now > session.expiresAt) {
-      // Mark as expired
       await updateDoc(sessionRef, {
         status: 'EXPIRED',
         expiredAt: serverTimestamp(),
@@ -84,32 +84,20 @@ export async function POST(request: Request) {
     }
 
     // 6. VERIFY HMAC TOKEN (constant-time comparison)
+    // Token is reconstructed from session data + server secret, NOT read from DB
     const tokenValid = verifySessionToken(token, sessionId, walletAddress, session.expiresAt);
     if (!tokenValid) {
       return NextResponse.json({ error: 'Invalid session token' }, { status: 403 });
     }
 
-    // 7. ANTI-CHEAT VALIDATION
+    // 7. SERVER-SIDE REWARD CALCULATION
     const elapsedSeconds = Math.max(1, Math.round((now - session.createdAt) / 1000));
 
-    const MAX_SCORE_PER_SEC = 120;
-    const MAX_COINS_PER_SEC = 3.0;
-    const MAX_TOTAL_SCORE_FOR_DURATION = MAX_SCORE_PER_SEC * elapsedSeconds;
-    const MAX_TOTAL_COINS_FOR_DURATION = MAX_COINS_PER_SEC * elapsedSeconds;
-
-    let flagReason: string | null = null;
-
-    if (score > 0 && elapsedSeconds < 2) {
-      flagReason = `Impossible run time (${elapsedSeconds}s for score ${score})`;
-    } else if (score / elapsedSeconds > MAX_SCORE_PER_SEC) {
-      flagReason = `Score rate exceeded (${(score / elapsedSeconds).toFixed(1)} pts/sec > ${MAX_SCORE_PER_SEC} max)`;
-    } else if (coins / elapsedSeconds > MAX_COINS_PER_SEC) {
-      flagReason = `Coin rate exceeded (${(coins / elapsedSeconds).toFixed(1)} coins/sec > ${MAX_COINS_PER_SEC} max)`;
-    } else if (score > MAX_TOTAL_SCORE_FOR_DURATION) {
-      flagReason = `Score exceeds maximum for duration (${score} > ${MAX_TOTAL_SCORE_FOR_DURATION} for ${elapsedSeconds}s)`;
-    } else if (coins > MAX_TOTAL_COINS_FOR_DURATION) {
-      flagReason = `Coins exceed maximum for duration (${coins} > ${Math.round(MAX_TOTAL_COINS_FOR_DURATION)} for ${elapsedSeconds}s)`;
-    }
+    const { verifiedScore, verifiedCoins, flagReason } = calculateVerifiedReward(
+      score,
+      coins,
+      elapsedSeconds
+    );
 
     if (flagReason) {
       console.warn(`[ANTI-CHEAT FLAGGED] User ${walletAddress} flagged: ${flagReason}`);
@@ -118,6 +106,7 @@ export async function POST(request: Request) {
         flagReason,
         attemptedScore: score,
         attemptedCoins: coins,
+        durationSeconds: elapsedSeconds,
         flaggedAt: serverTimestamp(),
       });
 
@@ -127,12 +116,13 @@ export async function POST(request: Request) {
       );
     }
 
-    // 8. PERSIST RESULTS
-    // Mark session as completed
+    // 8. PERSIST RESULTS — using server-calculated values, not client-claimed values
     await updateDoc(sessionRef, {
       status: 'COMPLETED',
-      finalScore: score,
-      finalCoins: coins,
+      finalScore: verifiedScore,
+      finalCoins: verifiedCoins,
+      claimedScore: score,
+      claimedCoins: coins,
       durationSeconds: elapsedSeconds,
       completedAt: serverTimestamp(),
     });
@@ -140,26 +130,26 @@ export async function POST(request: Request) {
     // Log verified run to game_history
     await addDoc(collection(db, 'game_history'), {
       userAddress: walletAddress,
-      score,
-      coins,
+      score: verifiedScore,
+      coins: verifiedCoins,
       durationSeconds: elapsedSeconds,
       sessionId,
       verified: true,
       createdAt: serverTimestamp(),
     });
 
-    // Deposit verified coins into user bank in Firestore
-    if (coins > 0) {
+    // Deposit server-verified coins into user bank in Firestore
+    if (verifiedCoins > 0) {
       const userRef = doc(db, 'users', walletAddress);
       try {
         await updateDoc(userRef, {
-          totalCoins: increment(coins),
+          totalCoins: increment(verifiedCoins),
           updatedAt: serverTimestamp(),
         });
       } catch {
         await setDoc(userRef, {
           address: walletAddress,
-          totalCoins: coins,
+          totalCoins: verifiedCoins,
           createdAt: serverTimestamp(),
         }, { merge: true });
       }
@@ -167,8 +157,8 @@ export async function POST(request: Request) {
 
     return NextResponse.json({
       success: true,
-      verifiedScore: score,
-      verifiedCoins: coins,
+      verifiedScore,
+      verifiedCoins,
       durationSeconds: elapsedSeconds,
     });
   } catch (error: any) {

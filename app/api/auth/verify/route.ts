@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, deleteDoc } from 'firebase/firestore';
+import { doc, runTransaction } from 'firebase/firestore';
 import { PublicKey } from '@solana/web3.js';
 import { createAuthCookieValue, AUTH_COOKIE_NAME } from '@/lib/auth';
 import nacl from 'tweetnacl';
@@ -10,6 +10,9 @@ import nacl from 'tweetnacl';
  *
  * Verifies that the wallet owns the claimed address by checking an ed25519
  * signature over the challenge nonce. Sets an httpOnly auth cookie on success.
+ *
+ * Uses Firestore runTransaction to atomically consume the challenge nonce,
+ * preventing replay of a valid signed challenge.
  */
 export async function POST(request: Request) {
   try {
@@ -26,49 +29,77 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Valid signature is required' }, { status: 400 });
     }
 
-    // Load and validate the challenge from Firestore
-    const challengeRef = doc(db, 'auth_challenges', nonce);
-    const challengeSnap = await getDoc(challengeRef);
-
-    if (!challengeSnap.exists()) {
-      return NextResponse.json({ error: 'Challenge not found or already used' }, { status: 400 });
-    }
-
-    const challenge = challengeSnap.data();
-
-    // Verify the challenge hasn't expired
-    if (Date.now() > challenge.expiresAt) {
-      await deleteDoc(challengeRef);
-      return NextResponse.json({ error: 'Challenge expired' }, { status: 400 });
-    }
-
-    // Verify the challenge was issued for this wallet
-    if (challenge.walletAddress !== walletAddress) {
-      return NextResponse.json({ error: 'Challenge was not issued for this wallet' }, { status: 400 });
-    }
-
-    // Verify the ed25519 signature
-    let isValid = false;
+    // Verify the ed25519 signature first (before touching Firestore)
+    let isSignatureValid = false;
     try {
       const publicKeyBytes = new PublicKey(walletAddress).toBytes();
       const messageBytes = new TextEncoder().encode(nonce);
       const signatureBytes = Buffer.from(signature, 'base64');
 
-      isValid = nacl.sign.detached.verify(
+      isSignatureValid = nacl.sign.detached.verify(
         messageBytes,
         signatureBytes,
         publicKeyBytes
       );
-    } catch (err) {
+    } catch {
       return NextResponse.json({ error: 'Invalid signature format' }, { status: 400 });
     }
 
-    if (!isValid) {
+    if (!isSignatureValid) {
       return NextResponse.json({ error: 'Signature verification failed' }, { status: 403 });
     }
 
-    // Signature is valid — delete the challenge (single-use)
-    await deleteDoc(challengeRef);
+    // Atomically consume the challenge nonce using Firestore transaction.
+    // This prevents replay: if two requests arrive with the same signed nonce,
+    // only the first one succeeds.
+    const challengeRef = doc(db, 'auth_challenges', nonce);
+
+    try {
+      await runTransaction(db, async (transaction) => {
+        const challengeSnap = await transaction.get(challengeRef);
+
+        if (!challengeSnap.exists()) {
+          throw new Error('CHALLENGE_NOT_FOUND');
+        }
+
+        const challenge = challengeSnap.data();
+
+        // Reject already-used nonce
+        if (challenge.used === true) {
+          throw new Error('CHALLENGE_ALREADY_USED');
+        }
+
+        // Reject expired nonce
+        if (Date.now() > challenge.expiresAt) {
+          // Mark as used so cleanup is clear
+          transaction.update(challengeRef, { used: true });
+          throw new Error('CHALLENGE_EXPIRED');
+        }
+
+        // Reject nonce issued for a different wallet
+        if (challenge.walletAddress !== walletAddress) {
+          throw new Error('CHALLENGE_WALLET_MISMATCH');
+        }
+
+        // Atomically mark as used (then delete below)
+        transaction.delete(challengeRef);
+      });
+    } catch (err: any) {
+      const msg = err.message || '';
+      if (msg === 'CHALLENGE_NOT_FOUND') {
+        return NextResponse.json({ error: 'Challenge not found or already used' }, { status: 400 });
+      }
+      if (msg === 'CHALLENGE_ALREADY_USED') {
+        return NextResponse.json({ error: 'Challenge has already been used' }, { status: 400 });
+      }
+      if (msg === 'CHALLENGE_EXPIRED') {
+        return NextResponse.json({ error: 'Challenge expired' }, { status: 400 });
+      }
+      if (msg === 'CHALLENGE_WALLET_MISMATCH') {
+        return NextResponse.json({ error: 'Challenge was not issued for this wallet' }, { status: 400 });
+      }
+      throw err;
+    }
 
     // Create signed auth cookie
     const cookieValue = createAuthCookieValue(walletAddress);

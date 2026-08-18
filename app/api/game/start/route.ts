@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { getMint, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import crypto from 'crypto';
@@ -15,7 +15,8 @@ import {
   SESSION_TTL_MS,
 } from '@/lib/auth';
 
-const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-beta.solana.com';
+const isMainnet = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' || process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta';
+const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || (isMainnet ? 'https://api.mainnet-beta.solana.com' : 'https://api.devnet.solana.com');
 
 /**
  * POST /api/game/start
@@ -26,14 +27,14 @@ const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || 'https://api.mainnet-b
  *
  * Flow:
  * 1. Authenticate wallet from cookie
- * 2. Check idempotency (same txSignature → return existing session)
+ * 2. Idempotency check (same txSignature → return existing session if wallet matches)
  * 3. Verify the transaction on-chain (finalized, correct mint/source/dest/amount)
  * 4. Atomically claim the payment and create session in Firestore
- * 5. Return session credentials
+ * 5. Return session credentials (token is computed, not stored)
  */
 export async function POST(request: Request) {
   try {
-    // 1. AUTHENTICATE — wallet address comes from signed auth cookie, not request body
+    // 1. AUTHENTICATE — wallet address comes from signed auth cookie
     const walletAddress = getAuthenticatedWallet(request);
     if (!walletAddress) {
       return NextResponse.json(
@@ -52,12 +53,12 @@ export async function POST(request: Request) {
       );
     }
 
-    // 2. IDEMPOTENCY CHECK — if this txSignature was already processed, return existing session
+    // 2. IDEMPOTENCY CHECK
     const existingPayment = await getDoc(doc(db, 'gamePayments', txSignature));
     if (existingPayment.exists()) {
       const payment = existingPayment.data();
 
-      // Different wallet trying to claim the same tx → reject
+      // Different wallet trying to use this tx → reject
       if (payment.userAddress !== walletAddress) {
         return NextResponse.json(
           { error: 'This transaction belongs to a different wallet' },
@@ -65,23 +66,35 @@ export async function POST(request: Request) {
         );
       }
 
-      // Payment already has a session — return it (idempotent retry)
+      // Payment has a session — check its state
       if (payment.sessionId) {
         const existingSession = await getDoc(doc(db, 'gameSessions', payment.sessionId));
         if (existingSession.exists()) {
           const session = existingSession.data();
+
           if (session.status === 'ACTIVE') {
+            // Idempotent retry: return existing active session
+            // Reconstruct the token (not stored in Firestore)
+            const token = createSessionToken(payment.sessionId, walletAddress, session.expiresAt);
             return NextResponse.json({
               sessionId: payment.sessionId,
-              token: session.token,
+              token,
             });
           }
-          // Session already completed/expired — this payment is consumed
+
+          // Session already completed/expired/flagged — payment is consumed
           return NextResponse.json(
-            { error: 'This payment has already been used for a completed game session' },
+            { error: 'PAYMENT_ALREADY_CONSUMED', details: `This payment was already used for a ${session.status} game session.` },
             { status: 400 }
           );
         }
+
+        // Session ID exists on payment but session doc is missing — integrity error
+        console.error(`[GAME/START] Payment ${txSignature} references missing session ${payment.sessionId}`);
+        return NextResponse.json(
+          { error: 'Session integrity error. Please contact support.' },
+          { status: 500 }
+        );
       }
     }
 
@@ -115,7 +128,6 @@ export async function POST(request: Request) {
     const sessionId = crypto.randomUUID();
     const now = Date.now();
     const expiresAt = now + SESSION_TTL_MS;
-    const token = createSessionToken(sessionId, walletAddress, expiresAt);
 
     try {
       await runTransaction(db, async (transaction) => {
@@ -141,13 +153,12 @@ export async function POST(request: Request) {
           sessionId,
         });
 
-        // Create game session record
+        // Create game session record (token is NOT stored — reconstructed from HMAC)
         const sessionRef = doc(db, 'gameSessions', sessionId);
         transaction.set(sessionRef, {
           sessionId,
           userAddress: walletAddress,
           paymentTxSignature: txSignature,
-          token,
           status: 'ACTIVE',
           createdAt: now,
           expiresAt,
@@ -155,30 +166,32 @@ export async function POST(request: Request) {
       });
     } catch (err: any) {
       if (err.message === 'PAYMENT_ALREADY_CLAIMED') {
-        // Another request claimed it between our check and the transaction
-        // Try to return the existing session (idempotent)
+        // Another request claimed it between our check and the transaction.
+        // Try to return the existing session (idempotent) only if wallet matches.
         const paymentSnap = await getDoc(doc(db, 'gamePayments', txSignature));
         if (paymentSnap.exists()) {
           const payment = paymentSnap.data();
           if (payment.userAddress === walletAddress && payment.sessionId) {
             const sessionSnap = await getDoc(doc(db, 'gameSessions', payment.sessionId));
             if (sessionSnap.exists() && sessionSnap.data().status === 'ACTIVE') {
+              const token = createSessionToken(payment.sessionId, walletAddress, sessionSnap.data().expiresAt);
               return NextResponse.json({
                 sessionId: payment.sessionId,
-                token: sessionSnap.data().token,
+                token,
               });
             }
           }
         }
         return NextResponse.json(
-          { error: 'Payment has already been claimed' },
+          { error: 'PAYMENT_ALREADY_CONSUMED', details: 'Payment has already been claimed.' },
           { status: 409 }
         );
       }
       throw err;
     }
 
-    // 5. RETURN session credentials
+    // 5. RETURN session credentials (token computed fresh, not stored)
+    const token = createSessionToken(sessionId, walletAddress, expiresAt);
     return NextResponse.json({ sessionId, token });
 
   } catch (error: any) {
@@ -195,21 +208,22 @@ export async function POST(request: Request) {
 interface VerificationResult {
   valid: boolean;
   reason?: string;
-  amount?: number;     // Raw amount (bigint as number)
-  amountUi?: number;   // UI amount (token units)
+  amount?: number;
+  amountUi?: number;
 }
 
 /**
  * Deep verification of the payment transaction on Solana.
  *
- * Checks:
- * a) Transaction exists and is finalized
- * b) Transaction succeeded (no error)
- * c) Contains an SPL token transfer instruction
- * d) Source token account owner === walletAddress
- * e) Destination token account owner === treasuryWallet
- * f) Mint === RWD mint
- * g) Amount >= GAME_FEE_AMOUNT × 10^decimals
+ * Finds the ONE unambiguous qualifying RWD transfer that matches:
+ * - Source owner === authenticated walletAddress
+ * - Destination owner === server's treasury wallet
+ * - Mint === server's RWD mint (CA)
+ * - Amount >= GAME_FEE_AMOUNT × 10^decimals
+ *
+ * Does NOT reject transactions with additional harmless instructions
+ * (e.g. CreateAssociatedTokenAccount). Only rejects if there are
+ * multiple ambiguous qualifying transfers.
  */
 async function verifyPaymentTransaction(
   connection: Connection,
@@ -226,16 +240,16 @@ async function verifyPaymentTransaction(
       maxSupportedTransactionVersion: 0,
       commitment: 'finalized',
     });
-  } catch (err: any) {
+  } catch {
     return { valid: false, reason: 'Failed to fetch transaction from Solana' };
   }
 
-  // (a) Transaction must exist
+  // Transaction must exist
   if (!parsedTx) {
     return { valid: false, reason: 'Transaction not found. It may not be finalized yet. Please wait and try again.' };
   }
 
-  // (b) Transaction must have succeeded
+  // Transaction must have succeeded
   if (parsedTx.meta?.err) {
     return { valid: false, reason: `Transaction failed on-chain: ${JSON.stringify(parsedTx.meta.err)}` };
   }
@@ -257,11 +271,9 @@ async function verifyPaymentTransaction(
 
   const requiredRawAmount = BigInt(Math.round(expectedFeeTokens * (10 ** decimals)));
 
-  // (c-g) Find the matching SPL token transfer instruction
+  // Collect all instructions (top-level + inner)
   const instructions = parsedTx.transaction?.message?.instructions || [];
   const innerInstructions = parsedTx.meta?.innerInstructions || [];
-
-  // Collect all instructions (top-level + inner)
   const allInstructions: any[] = [...instructions];
   for (const inner of innerInstructions) {
     if (inner.instructions) {
@@ -269,9 +281,24 @@ async function verifyPaymentTransaction(
     }
   }
 
-  // Look for a parsed SPL transfer/transferChecked instruction
-  let matchingTransfer: any = null;
-  let matchCount = 0;
+  // Pre-build a lookup from account index → token balance info
+  const preTokenBalances = parsedTx.meta?.preTokenBalances || [];
+  const postTokenBalances = parsedTx.meta?.postTokenBalances || [];
+  const allBalances = [...preTokenBalances, ...postTokenBalances];
+  const accountKeys = parsedTx.transaction?.message?.accountKeys || [];
+
+  // Map: token account pubkey → { owner, mint }
+  const tokenAccountInfo = new Map<string, { owner: string; mint: string }>();
+  for (const bal of allBalances) {
+    const accountKey = accountKeys[bal.accountIndex]?.pubkey?.toString?.() ||
+                       accountKeys[bal.accountIndex]?.toString?.() || '';
+    if (accountKey && bal.owner && bal.mint) {
+      tokenAccountInfo.set(accountKey, { owner: bal.owner, mint: bal.mint });
+    }
+  }
+
+  // Find qualifying transfer instructions
+  const qualifyingTransfers: { amount: number; amountUi: number }[] = [];
 
   for (const ix of allInstructions) {
     if (!ix.parsed) continue;
@@ -280,103 +307,70 @@ async function verifyPaymentTransaction(
     const isSplProgram =
       programId === TOKEN_PROGRAM_ID.toString() ||
       programId === TOKEN_2022_PROGRAM_ID.toString();
-
     if (!isSplProgram) continue;
 
     const { type, info } = ix.parsed;
+    if (type !== 'transfer' && type !== 'transferChecked') continue;
 
-    if (type === 'transfer' || type === 'transferChecked') {
-      // For 'transfer', we need to look up the token accounts to verify mint and owners
-      // For 'transferChecked', the mint is directly in the instruction
-      const transferMint = info.mint;
-      const authority = info.authority || info.multisigAuthority;
-      const source = info.source;
-      const destination = info.destination;
+    const authority = info.authority || info.multisigAuthority;
+    const source = info.source;
+    const destination = info.destination;
 
-      let transferAmount: bigint;
-      if (type === 'transferChecked') {
-        transferAmount = BigInt(info.tokenAmount?.amount || '0');
-      } else {
-        transferAmount = BigInt(info.amount || '0');
-      }
+    let transferAmount: bigint;
+    let transferMint: string | null = null;
 
-      // For 'transfer' type, we need to verify mint via pre/post token balances
-      let verifiedMint: string | null = transferMint || null;
+    if (type === 'transferChecked') {
+      // TransferChecked embeds the mint and amount directly
+      transferAmount = BigInt(info.tokenAmount?.amount || '0');
+      transferMint = info.mint || null;
+    } else {
+      // Plain transfer — amount only, need to look up mint from balances
+      transferAmount = BigInt(info.amount || '0');
+    }
 
-      if (!verifiedMint) {
-        // Look up the mint from pre/post token balances
-        const preTokenBalances = parsedTx.meta?.preTokenBalances || [];
-        const postTokenBalances = parsedTx.meta?.postTokenBalances || [];
-        const allBalances = [...preTokenBalances, ...postTokenBalances];
+    // Resolve source and destination info
+    const sourceInfo = tokenAccountInfo.get(source);
+    const destInfo = tokenAccountInfo.get(destination);
 
-        for (const bal of allBalances) {
-          const accountKeys = parsedTx.transaction?.message?.accountKeys || [];
-          const accountKey = accountKeys[bal.accountIndex]?.pubkey?.toString?.() ||
-                            accountKeys[bal.accountIndex]?.toString?.() || '';
+    // Determine source owner: authority is the signer, but sourceInfo.owner is more reliable
+    const sourceOwner = sourceInfo?.owner || authority;
+    const destOwner = destInfo?.owner || null;
 
-          if (accountKey === source || accountKey === destination) {
-            verifiedMint = bal.mint;
-            break;
-          }
-        }
-      }
+    // Determine mint: prefer instruction-level (transferChecked), fall back to balance lookup
+    const resolvedMint = transferMint || sourceInfo?.mint || destInfo?.mint || null;
 
-      // Verify owner of source and destination using pre/post token balances
-      let sourceOwner: string | null = authority; // authority is usually the owner
-      let destOwner: string | null = null;
+    // Check all qualifying conditions:
+    const senderMatches = sourceOwner === expectedSender;
+    const treasuryMatches = destOwner === expectedTreasury;
+    const mintMatches = resolvedMint === expectedMint;
+    const amountSufficient = transferAmount >= requiredRawAmount;
 
-      const preTokenBalances = parsedTx.meta?.preTokenBalances || [];
-      const postTokenBalances = parsedTx.meta?.postTokenBalances || [];
-      const allBalances = [...preTokenBalances, ...postTokenBalances];
-
-      for (const bal of allBalances) {
-        const accountKeys = parsedTx.transaction?.message?.accountKeys || [];
-        const accountKey = accountKeys[bal.accountIndex]?.pubkey?.toString?.() ||
-                          accountKeys[bal.accountIndex]?.toString?.() || '';
-
-        if (accountKey === source && bal.owner) {
-          sourceOwner = bal.owner;
-        }
-        if (accountKey === destination && bal.owner) {
-          destOwner = bal.owner;
-        }
-      }
-
-      // Check all conditions:
-      // (d) Source owner === expected sender
-      const senderMatches = sourceOwner === expectedSender;
-      // (e) Destination owner === expected treasury
-      const treasuryMatches = destOwner === expectedTreasury;
-      // (f) Mint matches
-      const mintMatches = verifiedMint === expectedMint;
-      // (g) Amount sufficient
-      const amountSufficient = transferAmount >= requiredRawAmount;
-
-      if (senderMatches && treasuryMatches && mintMatches && amountSufficient) {
-        matchingTransfer = {
-          amount: Number(transferAmount),
-          amountUi: Number(transferAmount) / (10 ** decimals),
-        };
-        matchCount++;
-      }
+    if (senderMatches && treasuryMatches && mintMatches && amountSufficient) {
+      qualifyingTransfers.push({
+        amount: Number(transferAmount),
+        amountUi: Number(transferAmount) / (10 ** decimals),
+      });
     }
   }
 
-  if (matchCount === 0) {
+  if (qualifyingTransfers.length === 0) {
     return {
       valid: false,
-      reason: 'No matching RWD token transfer found in this transaction. Ensure you are transferring the correct token to the correct treasury wallet.',
+      reason: 'No matching RWD token transfer found in this transaction. Ensure you transferred the correct token to the correct treasury wallet.',
     };
   }
 
-  if (matchCount > 1) {
-    // Multiple matching transfers is suspicious — accept but log
-    console.warn(`[GAME/START] Multiple matching transfers found in tx ${txSignature}`);
+  if (qualifyingTransfers.length > 1) {
+    // Multiple qualifying transfers to the same treasury with the same mint is ambiguous
+    return {
+      valid: false,
+      reason: `Ambiguous transaction: found ${qualifyingTransfers.length} qualifying transfers. Please submit a transaction with exactly one payment.`,
+    };
   }
 
   return {
     valid: true,
-    amount: matchingTransfer.amount,
-    amountUi: matchingTransfer.amountUi,
+    amount: qualifyingTransfers[0].amount,
+    amountUi: qualifyingTransfers[0].amountUi,
   };
 }

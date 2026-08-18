@@ -26,6 +26,7 @@ export async function POST(request: Request) {
       nonce,
       walletAddress,
       expiresAt,
+      used: false,
       createdAt: serverTimestamp(),
     });
 

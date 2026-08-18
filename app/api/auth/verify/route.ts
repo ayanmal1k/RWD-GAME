@@ -2,14 +2,14 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, runTransaction } from 'firebase/firestore';
 import { PublicKey } from '@solana/web3.js';
-import { createAuthCookieValue, AUTH_COOKIE_NAME } from '@/lib/auth';
+import { createAuthCookieValue, AUTH_COOKIE_NAME, buildAuthMessage } from '@/lib/auth';
 import nacl from 'tweetnacl';
 
 /**
  * POST /api/auth/verify
  *
  * Verifies that the wallet owns the claimed address by checking an ed25519
- * signature over the challenge nonce. Sets an httpOnly auth cookie on success.
+ * signature over the challenge message. Sets an httpOnly auth cookie on success.
  *
  * Uses Firestore runTransaction to atomically consume the challenge nonce,
  * preventing replay of a valid signed challenge.
@@ -33,14 +33,25 @@ export async function POST(request: Request) {
     let isSignatureValid = false;
     try {
       const publicKeyBytes = new PublicKey(walletAddress).toBytes();
-      const messageBytes = new TextEncoder().encode(nonce);
       const signatureBytes = Buffer.from(signature, 'base64');
 
+      // 1. Primary: Verify against user-friendly formatted message
+      const formattedMessageBytes = new TextEncoder().encode(buildAuthMessage(nonce, walletAddress));
       isSignatureValid = nacl.sign.detached.verify(
-        messageBytes,
+        formattedMessageBytes,
         signatureBytes,
         publicKeyBytes
       );
+
+      // 2. Fallback: Verify against raw nonce (backward compatibility)
+      if (!isSignatureValid) {
+        const rawNonceBytes = new TextEncoder().encode(nonce);
+        isSignatureValid = nacl.sign.detached.verify(
+          rawNonceBytes,
+          signatureBytes,
+          publicKeyBytes
+        );
+      }
     } catch {
       return NextResponse.json({ error: 'Invalid signature format' }, { status: 400 });
     }

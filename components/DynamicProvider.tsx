@@ -126,16 +126,18 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
         throw new Error('Failed to get auth challenge');
       }
 
-      const { nonce } = await challengeRes.json();
+      const challengeData = await challengeRes.json();
+      const nonce = challengeData.nonce;
+      const messageToSign = challengeData.message || nonce;
 
-      // Step 2: Sign the nonce with the wallet
+      // Step 2: Sign the user-friendly message with the wallet
       const provider = getWalletProvider();
       if (!provider) {
         throw new Error('No wallet provider available for signing');
       }
 
-      // Encode the nonce as bytes for signing
-      const messageBytes = new TextEncoder().encode(nonce);
+      // Encode the message as bytes for signing
+      const messageBytes = new TextEncoder().encode(messageToSign);
       let signatureBase64: string;
 
       if (provider.signMessage) {

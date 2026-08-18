@@ -237,3 +237,11 @@ export function getAuthenticatedWallet(request: Request): string | null {
 
 /** Cookie name for external use. */
 export { AUTH_COOKIE_NAME };
+
+/**
+ * Canonical user-friendly sign-in message for wallet authentication.
+ * Replaces bare raw session/token nonces with a clean, branded verification prompt.
+ */
+export function buildAuthMessage(nonce: string, walletAddress: string): string {
+  return `Welcome to Rewind Climber!\n\nSign this message to verify your wallet ownership.\nThis request will not cost any gas or execute any blockchain transaction.\n\nWallet: ${walletAddress}\nCode: ${nonce}`;
+}

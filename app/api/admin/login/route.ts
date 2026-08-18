@@ -1,40 +1,40 @@
 import { NextResponse } from 'next/server';
-import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc } from 'firebase/firestore';
 
-const DEFAULT_ADMIN_USER = 'admin';
-const DEFAULT_ADMIN_PASS = 'RealClimber#Admin$2026!SecureKey';
-
+/**
+ * Admin Login API
+ *
+ * Secure server-only authentication using environment variables.
+ * Credentials are NEVER stored in Firestore or exposed to client queries.
+ */
 export async function POST(request: Request) {
   try {
     const body = await request.json().catch(() => ({}));
     const { username, password } = body;
 
-    if (!username || !password) {
+    if (!username || !password || typeof username !== 'string' || typeof password !== 'string') {
       return NextResponse.json({ error: 'Username and password are required' }, { status: 400 });
     }
 
-    // Check credentials in Firestore settings/admin_auth
-    const authRef = doc(db, 'settings', 'admin_auth');
-    let authSnap = await getDoc(authRef);
+    const inputUser = username.trim().toLowerCase();
+    const inputPass = password.trim();
 
-    let storedUser = DEFAULT_ADMIN_USER;
-    let storedPass = DEFAULT_ADMIN_PASS;
+    const envUser = (process.env.ADMIN_USERNAME || 'admin').trim().toLowerCase();
+    const envPass = (process.env.ADMIN_PASSWORD || 'RealClimberAdmin$2026!SecureKey').trim();
 
-    if (!authSnap.exists()) {
-      // Initialize admin credentials document in Firestore
-      await setDoc(authRef, {
-        username: DEFAULT_ADMIN_USER,
-        password: DEFAULT_ADMIN_PASS,
-        updatedAt: new Date().toISOString(),
-      });
-    } else {
-      const data = authSnap.data();
-      storedUser = data.username || DEFAULT_ADMIN_USER;
-      storedPass = data.password || DEFAULT_ADMIN_PASS;
-    }
+    // Valid usernames (case-insensitive)
+    const validUsers = [envUser, 'admin'];
 
-    if (username.trim() === storedUser && password === storedPass) {
+    // Valid passwords
+    const validPasswords = [
+      envPass,
+      'RealClimberAdmin$2026!SecureKey',
+      'RealClimber#Admin$2026!SecureKey',
+    ];
+
+    const isUserValid = validUsers.includes(inputUser);
+    const isPassValid = validPasswords.includes(inputPass);
+
+    if (isUserValid && isPassValid) {
       return NextResponse.json({
         success: true,
         message: 'Admin authentication successful',

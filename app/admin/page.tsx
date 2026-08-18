@@ -69,6 +69,7 @@ export default function AdminPage() {
   const [endDate, setEndDate] = useState('');
   const [gameFeeAmount, setGameFeeAmount] = useState<number>(10);
   const [minRwdRequired, setMinRwdRequired] = useState<number>(0);
+  const [minRwdUsdRequired, setMinRwdUsdRequired] = useState<number>(10);
   const [coinsPerToken, setCoinsPerToken] = useState<number>(10);
   const [minWithdrawCoins, setMinWithdrawCoins] = useState<number>(1000);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
@@ -139,6 +140,7 @@ export default function AdminPage() {
         setEndDate(data.endDate || '');
         if (typeof data.gameFeeAmount === 'number') setGameFeeAmount(data.gameFeeAmount);
         if (typeof data.minRwdRequired === 'number') setMinRwdRequired(data.minRwdRequired);
+        if (typeof data.minRwdUsdRequired === 'number') setMinRwdUsdRequired(data.minRwdUsdRequired);
         if (typeof data.coinsPerToken === 'number') setCoinsPerToken(data.coinsPerToken);
         if (typeof data.minWithdrawCoins === 'number') setMinWithdrawCoins(data.minWithdrawCoins);
       }
@@ -237,6 +239,7 @@ export default function AdminPage() {
           endDate,
           gameFeeAmount: Number(gameFeeAmount) || 0,
           minRwdRequired: Number(minRwdRequired) || 0,
+          minRwdUsdRequired: Number(minRwdUsdRequired) || 0,
           coinsPerToken: Number(coinsPerToken) || 10,
           minWithdrawCoins: Number(minWithdrawCoins) || 1000,
         }),
@@ -503,10 +506,30 @@ export default function AdminPage() {
                     </p>
                   </div>
 
-                  {/* 2. Minimum $RWD Holdings Required to Play */}
+                  {/* 2. Mainnet: Minimum $RWD Holdings in USD ($) */}
+                  <div className="bg-[#07030e] border border-fuchsia-500/30 rounded-2xl p-4 space-y-2 shadow-[0_0_15px_rgba(217,70,239,0.1)]">
+                    <label className="text-[10px] font-mono font-bold text-fuchsia-300 uppercase flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-fuchsia-400" /> MAINNET: MIN $RWD HOLDING ($ USD VALUE)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={minRwdUsdRequired}
+                      onChange={(e) => setMinRwdUsdRequired(Number(e.target.value))}
+                      required
+                      className="w-full bg-transparent font-mono text-base font-bold text-fuchsia-200 focus:outline-none"
+                      placeholder="10"
+                    />
+                    <p className="text-[9px] font-mono text-fuchsia-300/60">
+                      On Mainnet, user wallet must hold at least this USD value worth of $RWD (checked live via DexScreener).
+                    </p>
+                  </div>
+
+                  {/* 3. Devnet: Minimum $RWD Holdings (Tokens) */}
                   <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
                     <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
-                      <ShieldCheck className="w-3.5 h-3.5 text-fuchsia-400" /> MIN $RWD HOLDING REQUIRED TO PLAY
+                      <ShieldCheck className="w-3.5 h-3.5 text-purple-400" /> DEVNET: MIN $RWD HOLDING (RAW TOKENS)
                     </label>
                     <input
                       type="number"
@@ -519,11 +542,11 @@ export default function AdminPage() {
                       placeholder="0"
                     />
                     <p className="text-[9px] font-mono text-purple-400/60">
-                      Minimum $RWD tokens a wallet must hold to be eligible to play (0 = no minimum).
+                      On Devnet, minimum $RWD raw tokens required to play (0 = no minimum).
                     </p>
                   </div>
 
-                  {/* 3. Coin-to-Token Exchange Rate */}
+                  {/* 4. Coin-to-Token Exchange Rate */}
                   <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
                     <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
                       <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" /> COINS PER 1 $RWD TOKEN (EXCHANGE RATE)
@@ -543,8 +566,8 @@ export default function AdminPage() {
                     </p>
                   </div>
 
-                  {/* 4. Minimum Coin Withdrawal Threshold */}
-                  <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
+                  {/* 5. Minimum Coin Withdrawal Threshold */}
+                  <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2 sm:col-span-2">
                     <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
                       <ArrowDownToLine className="w-3.5 h-3.5 text-fuchsia-400" /> MIN COINS TO WITHDRAW
                     </label>
@@ -628,7 +651,12 @@ export default function AdminPage() {
                   </div>
                   <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
                   <div className="space-y-0.5">
-                    <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Min Holding Gate</span>
+                    <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Mainnet Gate</span>
+                    <span className="font-press-start text-xs text-fuchsia-300">{minRwdUsdRequired > 0 ? `$${minRwdUsdRequired.toFixed(2)} USD` : 'No Min'}</span>
+                  </div>
+                  <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Devnet Gate</span>
                     <span className="font-press-start text-xs text-purple-200">{minRwdRequired > 0 ? `${minRwdRequired} $RWD` : 'No Min'}</span>
                   </div>
                   <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
@@ -639,7 +667,7 @@ export default function AdminPage() {
                   <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
                   <div className="space-y-0.5">
                     <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Min Withdrawal</span>
-                    <span className="font-press-start text-xs text-purple-200">{minWithdrawCoins.toLocaleString()} Coins (= {(minWithdrawCoins / (coinsPerToken || 1)).toFixed(2)} $RWD)</span>
+                    <span className="font-press-start text-xs text-purple-200">{minWithdrawCoins.toLocaleString()} Coins</span>
                   </div>
                 </div>
 

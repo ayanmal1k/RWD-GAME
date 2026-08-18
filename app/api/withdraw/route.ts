@@ -17,6 +17,7 @@ import { fetchRealTokenBalance, MIN_REAL_REQUIRED, RWD_TOKEN_MINT } from '@/lib/
 import { getRwdMint } from '@/lib/auth';
 
 const TOKEN_MINT_ADDRESS = getRwdMint() || RWD_TOKEN_MINT;
+const isMainnet = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' || process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta';
 
 export async function POST(request: Request) {
   try {
@@ -31,16 +32,35 @@ export async function POST(request: Request) {
     const { getGameSettings } = await import('@/lib/gameSettings');
     const gameSettings = await getGameSettings();
 
-    // Verify $RWD token balance on-chain if minimum required > 0
-    if (gameSettings.minRwdRequired > 0) {
-      const rwdBalance = await fetchRealTokenBalance(userAddress);
-      if (rwdBalance < gameSettings.minRwdRequired) {
-        return NextResponse.json(
-          {
-            error: `Access Denied: You must hold at least ${gameSettings.minRwdRequired.toLocaleString()} $RWD tokens in your wallet to withdraw. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
-          },
-          { status: 403 }
-        );
+    // Verify $RWD token balance on-chain (USD on Mainnet, raw tokens on Devnet)
+    if (isMainnet) {
+      if (gameSettings.minRwdUsdRequired > 0) {
+        const { fetchRwdTokenPriceUsd } = await import('@/lib/tokenPrice');
+        const [rwdBalance, tokenPrice] = await Promise.all([
+          fetchRealTokenBalance(userAddress),
+          fetchRwdTokenPriceUsd(),
+        ]);
+        const userUsdValue = rwdBalance * tokenPrice;
+        if (userUsdValue < gameSettings.minRwdUsdRequired) {
+          return NextResponse.json(
+            {
+              error: `Access Denied: You must hold at least $${gameSettings.minRwdUsdRequired.toFixed(2)} USD worth of $RWD tokens in your wallet to withdraw. Current value: $${userUsdValue.toFixed(2)} USD (${rwdBalance.toLocaleString()} $RWD @ $${tokenPrice.toFixed(8)}).`
+            },
+            { status: 403 }
+          );
+        }
+      }
+    } else {
+      if (gameSettings.minRwdRequired > 0) {
+        const rwdBalance = await fetchRealTokenBalance(userAddress);
+        if (rwdBalance < gameSettings.minRwdRequired) {
+          return NextResponse.json(
+            {
+              error: `Access Denied: You must hold at least ${gameSettings.minRwdRequired.toLocaleString()} $RWD tokens in your wallet to withdraw on Devnet. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
+            },
+            { status: 403 }
+          );
+        }
       }
     }
 
@@ -85,7 +105,6 @@ export async function POST(request: Request) {
 
     // Check if real Treasury Private Key exists in environment
     const treasuryKeySecret = process.env.TREASURY_SOLANA_PRIVATE_KEY;
-    const isMainnet = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' || process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta';
     const rpcUrl = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || (isMainnet ? 'https://api.mainnet-beta.solana.com' : 'https://api.devnet.solana.com');
 
     if (treasuryKeySecret && treasuryKeySecret.trim().length > 0) {

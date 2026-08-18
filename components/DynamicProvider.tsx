@@ -13,8 +13,11 @@ interface WalletContextType {
   connectNativeSolana: () => Promise<void>;
   walletError: string | null;
   realBalance: number | null;
+  userBalanceUsd: number;
+  tokenPriceUsd: number;
   isCheckingBalance: boolean;
   isEligible: boolean;
+  isMainnet: boolean;
   refetchBalance: () => Promise<void>;
   /** Whether the wallet has been authenticated via signature challenge. */
   isAuthenticated: boolean;
@@ -29,8 +32,11 @@ const WalletContext = createContext<WalletContextType>({
   connectNativeSolana: async () => {},
   walletError: null,
   realBalance: null,
+  userBalanceUsd: 0,
+  tokenPriceUsd: 0,
   isCheckingBalance: false,
   isEligible: false,
+  isMainnet: false,
   refetchBalance: async () => {},
   isAuthenticated: false,
   isAuthenticating: false,
@@ -98,8 +104,8 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
   const activeAddress = dynamicWalletAddress || nativeAddress;
   const primaryWallet = activeAddress ? { address: activeAddress } : null;
 
-  // Track $REAL Token balance using custom hook
-  const { realBalance, isCheckingBalance, isEligible, refetchBalance } = useRealTokenBalance(activeAddress);
+  // Track $RWD Token balance & USD value using custom hook
+  const { realBalance, tokenPriceUsd, userBalanceUsd, isCheckingBalance, isEligible, isMainnet, refetchBalance } = useRealTokenBalance(activeAddress);
 
   // -------------------------------------------------------------------------
   // Wallet Authentication via Signature Challenge
@@ -255,8 +261,11 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
         connectNativeSolana,
         walletError,
         realBalance,
+        userBalanceUsd,
+        tokenPriceUsd,
         isCheckingBalance,
         isEligible,
+        isMainnet,
         refetchBalance,
         isAuthenticated,
         isAuthenticating,

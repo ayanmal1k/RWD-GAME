@@ -35,13 +35,14 @@ interface WithdrawalRecord {
 }
 
 export default function WithdrawPage() {
-  const { primaryWallet, setShowAuthFlow, realBalance, isCheckingBalance, isEligible } = useAppWallet();
+  const { primaryWallet, setShowAuthFlow, realBalance, userBalanceUsd, isCheckingBalance, isEligible, isMainnet } = useAppWallet();
   const { settings: gameSettings } = useGameSettings();
   const address = primaryWallet?.address;
 
   const coinsPerToken = gameSettings.coinsPerToken || 10;
   const minWithdraw = gameSettings.minWithdrawCoins || 1000;
   const minHolding = gameSettings.minRwdRequired;
+  const minHoldingUsd = gameSettings.minRwdUsdRequired ?? 10;
 
   const [bankCoins, setBankCoins] = useState<number>(0);
   const [exchangeCoins, setExchangeCoins] = useState<string>(String(minWithdraw));
@@ -123,7 +124,11 @@ export default function WithdrawPage() {
     }
 
     if (!isEligible) {
-      setErrorMsg(`Withdrawal locked! You must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $RWD tokens in your wallet to withdraw.`);
+      if (isMainnet) {
+        setErrorMsg(`Withdrawal locked! You must hold at least $${minHoldingUsd.toFixed(2)} USD worth of $RWD tokens in your wallet to withdraw.`);
+      } else {
+        setErrorMsg(`Withdrawal locked! You must hold at least ${minHolding.toLocaleString()} $RWD tokens in your wallet to withdraw.`);
+      }
       return;
     }
 

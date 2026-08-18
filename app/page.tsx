@@ -40,7 +40,18 @@ export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
 
-  const { primaryWallet, setShowAuthFlow, realBalance, isCheckingBalance, isEligible, isAuthenticated, isAuthenticating } = useAppWallet();
+  const {
+    primaryWallet,
+    setShowAuthFlow,
+    realBalance,
+    userBalanceUsd,
+    tokenPriceUsd,
+    isMainnet,
+    isCheckingBalance,
+    isEligible,
+    isAuthenticated,
+    isAuthenticating,
+  } = useAppWallet();
   const { settings: gameSettings } = useGameSettings();
 
   // Payment flow state
@@ -49,6 +60,7 @@ export default function Home() {
 
   const GAME_FEE = gameSettings.gameFeeAmount;
   const MIN_HOLDING_REQUIRED = gameSettings.minRwdRequired;
+  const MIN_USD_REQUIRED = gameSettings.minRwdUsdRequired;
 
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'PAUSED' | 'GAME_OVER'>('START');
   const [score, setScore] = useState(0);
@@ -462,14 +474,18 @@ export default function Home() {
                         <img src="/logo.jpg" alt="$RWD" className="w-6 h-6 rounded-full border border-fuchsia-400/40 shrink-0 object-cover" />
                         <div className="flex flex-col">
                           <span className="text-[9px] font-bold uppercase tracking-wider text-purple-300/90 flex items-center gap-1">
-                            $RWD HOLDINGS GATE
+                            {isMainnet ? '$RWD HOLDINGS GATE ($USD)' : '$RWD HOLDINGS GATE'}
                           </span>
                           <span className="font-bold text-white text-[11px]">
                             {isCheckingBalance
-                              ? 'Fetching SPL Token Balance...'
-                              : MIN_HOLDING_REQUIRED > 0
-                                ? `${(realBalance ?? 0).toLocaleString()} / ${MIN_HOLDING_REQUIRED.toLocaleString()} $RWD`
-                                : `${(realBalance ?? 0).toLocaleString()} $RWD (No Min Required)`}
+                              ? 'Fetching $RWD Balance & Price...'
+                              : isMainnet
+                                ? MIN_USD_REQUIRED > 0
+                                  ? `$${userBalanceUsd.toFixed(2)} / $${MIN_USD_REQUIRED.toFixed(2)} USD (${(realBalance ?? 0).toLocaleString()} $RWD)`
+                                  : `$${userBalanceUsd.toFixed(2)} USD (No Min Required)`
+                                : MIN_HOLDING_REQUIRED > 0
+                                  ? `${(realBalance ?? 0).toLocaleString()} / ${MIN_HOLDING_REQUIRED.toLocaleString()} $RWD`
+                                  : `${(realBalance ?? 0).toLocaleString()} $RWD (No Min Required)`}
                           </span>
                         </div>
                       </div>
@@ -481,13 +497,13 @@ export default function Home() {
 
                     {!isEligible && !isCheckingBalance && (
                       <a
-                        href={`https://pump.fun/coin/${RWD_TOKEN_MINT}`}
+                        href={isMainnet ? 'https://dexscreener.com/solana/HnfN7ZSaVQMKSKbz3pUdsmPuGkgAYAEnVq8pxsSH9Wow' : `https://pump.fun/coin/${RWD_TOKEN_MINT}`}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="w-full py-3 px-4 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 hover:from-purple-500 hover:to-fuchsia-400 text-white font-press-start text-[9px] sm:text-[10px] font-extrabold rounded-2xl border-2 border-fuchsia-300 shadow-[0_0_20px_rgba(168,85,247,0.6)] hover:shadow-[0_0_30px_rgba(217,70,239,0.9)] flex items-center justify-center gap-2 transition-all transform hover:scale-[1.02] active:scale-[0.98] cursor-pointer tracking-wider"
                       >
                         <ShoppingCart className="w-4 h-4 text-white shrink-0" />
-                        <span>BUY $RWD ON PUMP.FUN</span>
+                        <span>{isMainnet ? 'BUY $RWD ON DEXSCREENER' : 'BUY $RWD ON PUMP.FUN'}</span>
                         <ExternalLink className="w-3.5 h-3.5 text-white shrink-0" />
                       </a>
                     )}

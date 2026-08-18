@@ -109,17 +109,37 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
-    // Dynamic Minimum RWD Holding Check
-    if (gameSettings.minRwdRequired > 0) {
-      const { fetchRwdTokenBalance } = await import('@/lib/solana');
-      const rwdBalance = await fetchRwdTokenBalance(walletAddress, connection);
-      if (rwdBalance < gameSettings.minRwdRequired) {
-        return NextResponse.json(
-          {
-            error: `Access Denied: Wallet must hold at least ${gameSettings.minRwdRequired.toLocaleString()} $RWD tokens to play. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
-          },
-          { status: 403 }
-        );
+    // Dynamic Minimum RWD Holding Check (USD value on Mainnet, raw tokens on Devnet)
+    if (isMainnet) {
+      if (gameSettings.minRwdUsdRequired > 0) {
+        const { fetchRwdTokenBalance } = await import('@/lib/solana');
+        const { fetchRwdTokenPriceUsd } = await import('@/lib/tokenPrice');
+        const [rwdBalance, tokenPrice] = await Promise.all([
+          fetchRwdTokenBalance(walletAddress, connection),
+          fetchRwdTokenPriceUsd(),
+        ]);
+        const userUsdValue = rwdBalance * tokenPrice;
+        if (userUsdValue < gameSettings.minRwdUsdRequired) {
+          return NextResponse.json(
+            {
+              error: `Access Denied: Wallet must hold at least $${gameSettings.minRwdUsdRequired.toFixed(2)} USD worth of $RWD tokens to play. Current holdings: $${userUsdValue.toFixed(2)} USD (${rwdBalance.toLocaleString()} $RWD @ $${tokenPrice.toFixed(8)}).`
+            },
+            { status: 403 }
+          );
+        }
+      }
+    } else {
+      if (gameSettings.minRwdRequired > 0) {
+        const { fetchRwdTokenBalance } = await import('@/lib/solana');
+        const rwdBalance = await fetchRwdTokenBalance(walletAddress, connection);
+        if (rwdBalance < gameSettings.minRwdRequired) {
+          return NextResponse.json(
+            {
+              error: `Access Denied: Wallet must hold at least ${gameSettings.minRwdRequired.toLocaleString()} $RWD tokens to play on Devnet. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
+            },
+            { status: 403 }
+          );
+        }
       }
     }
 

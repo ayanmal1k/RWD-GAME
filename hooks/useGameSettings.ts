@@ -24,6 +24,7 @@ export function useGameSettings() {
           setSettings({
             gameFeeAmount: typeof data.gameFeeAmount === 'number' ? data.gameFeeAmount : DEFAULT_GAME_SETTINGS.gameFeeAmount,
             minRwdRequired: typeof data.minRwdRequired === 'number' ? data.minRwdRequired : DEFAULT_GAME_SETTINGS.minRwdRequired,
+            minRwdUsdRequired: typeof data.minRwdUsdRequired === 'number' ? data.minRwdUsdRequired : DEFAULT_GAME_SETTINGS.minRwdUsdRequired,
             coinsPerToken: typeof data.coinsPerToken === 'number' && data.coinsPerToken > 0 ? data.coinsPerToken : DEFAULT_GAME_SETTINGS.coinsPerToken,
             minWithdrawCoins: typeof data.minWithdrawCoins === 'number' && data.minWithdrawCoins >= 0 ? data.minWithdrawCoins : DEFAULT_GAME_SETTINGS.minWithdrawCoins,
             leaderboardEnabled: data.leaderboardEnabled !== undefined ? Boolean(data.leaderboardEnabled) : DEFAULT_GAME_SETTINGS.leaderboardEnabled,

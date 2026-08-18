@@ -1370,9 +1370,9 @@ export class GameEngine {
 
     // 4. Jump trigger
     if (this.keys.jump && this.player.onGround) {
-      if (this.keys.shift && this.coinsCount >= 20) {
+      if (this.keys.shift && this.coinsCount >= 10) {
         this.player.vy = this.powerJumpStrength;
-        this.coinsCount -= 20;
+        this.coinsCount -= 10;
         this.callbacks.onCoinChange(this.coinsCount);
         this.audio.playSpring();
         this.spawnJumpDust(this.player.x + this.player.width / 2, this.player.y);

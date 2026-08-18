@@ -839,10 +839,10 @@ export default function Home() {
                     className="w-14 h-14 sm:w-18 sm:h-18 bg-black/60 backdrop-blur-md border-2 border-purple-500/40 rounded-2xl text-fuchsia-300 text-xl sm:text-2xl flex items-center justify-center active:bg-purple-500/30 select-none touch-none shadow-lg"
                   >▲</button>
                   <button
-                    onPointerDown={(e) => { e.preventDefault(); if (coins >= 20) { engineRef.current?.setKeyState('shift', true); engineRef.current?.setKeyState('jump', true); } }}
+                    onPointerDown={(e) => { e.preventDefault(); if (coins >= 10) { engineRef.current?.setKeyState('shift', true); engineRef.current?.setKeyState('jump', true); } }}
                     onPointerUp={(e) => { e.preventDefault(); engineRef.current?.setKeyState('shift', false); engineRef.current?.setKeyState('jump', false); }}
                     onPointerLeave={(e) => { e.preventDefault(); engineRef.current?.setKeyState('shift', false); engineRef.current?.setKeyState('jump', false); }}
-                    className={`w-14 h-14 sm:w-18 sm:h-18 border-2 rounded-2xl text-lg sm:text-xl flex items-center justify-center select-none touch-none font-bold backdrop-blur-md shadow-lg ${coins >= 20 ? 'bg-black/60 border-fuchsia-400 text-fuchsia-300 active:bg-fuchsia-400/30 cursor-pointer' : 'bg-black/40 border-purple-900/40 text-purple-700/50 cursor-not-allowed'}`}
+                    className={`w-14 h-14 sm:w-18 sm:h-18 border-2 rounded-2xl text-lg sm:text-xl flex items-center justify-center select-none touch-none font-bold backdrop-blur-md shadow-lg ${coins >= 10 ? 'bg-black/60 border-fuchsia-400 text-fuchsia-300 active:bg-fuchsia-400/30 cursor-pointer' : 'bg-black/40 border-purple-900/40 text-purple-700/50 cursor-not-allowed'}`}
                   >▲▲</button>
                 </div>
               </div>
@@ -889,7 +889,7 @@ export default function Home() {
                 <div className="flex items-center justify-between bg-[#07030e] p-2.5 rounded-xl border border-purple-500/15">
                   <div className="flex items-center gap-1">
                     <span className="text-[11px] font-bold text-purple-200">Super Jump</span>
-                    <span className="text-[9px] text-fuchsia-400 font-bold">(20 Coins)</span>
+                    <span className="text-[9px] text-fuchsia-400 font-bold">(10 Coins)</span>
                   </div>
                   <div className="flex gap-1 items-center">
                     <kbd className="px-2 py-1 bg-[#241340] border border-purple-500/40 rounded-lg text-fuchsia-300 font-mono font-bold text-[8px]">SHIFT</kbd>
@@ -907,7 +907,7 @@ export default function Home() {
                 </div>
                 <div className="flex items-center gap-2 bg-[#07030e]/60 p-2 rounded-lg border border-purple-500/10">
                   <span className="text-fuchsia-400 font-bold text-xs shrink-0">🚀 Super Jump</span>
-                  <span>Spend 20 coins for a 1.6x massive upward vault!</span>
+                  <span>Spend 10 coins for a 1.6x massive upward vault!</span>
                 </div>
               </div>
             </section>

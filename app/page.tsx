@@ -9,6 +9,7 @@ import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
 import { MIN_REAL_REQUIRED, RWD_TOKEN_MINT } from '@/lib/solana';
 import { payGameFee } from '@/lib/payGameFee';
+import { useGameSettings } from '@/hooks/useGameSettings';
 import {
   Pause,
   Volume2,
@@ -40,12 +41,14 @@ export default function Home() {
   const engineRef = useRef<GameEngine | null>(null);
 
   const { primaryWallet, setShowAuthFlow, realBalance, isCheckingBalance, isEligible, isAuthenticated, isAuthenticating } = useAppWallet();
+  const { settings: gameSettings } = useGameSettings();
 
   // Payment flow state
   const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'confirming' | 'error'>('idle');
   const [paymentError, setPaymentError] = useState<string | null>(null);
 
-  const GAME_FEE = Number(process.env.NEXT_PUBLIC_GAME_FEE_AMOUNT || 10);
+  const GAME_FEE = gameSettings.gameFeeAmount;
+  const MIN_HOLDING_REQUIRED = gameSettings.minRwdRequired;
 
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'PAUSED' | 'GAME_OVER'>('START');
   const [score, setScore] = useState(0);
@@ -268,8 +271,8 @@ export default function Home() {
     setPaymentStatus('pending');
 
     try {
-      // Step 1: Build and send the 10 RWD payment transaction
-      const { txSignature } = await payGameFee(primaryWallet.address);
+      // Step 1: Build and send the dynamic RWD payment transaction
+      const { txSignature } = await payGameFee(primaryWallet.address, GAME_FEE);
       console.log('Payment tx submitted:', txSignature);
 
       // Step 2: Server verifies the finalized transaction and creates session
@@ -464,8 +467,8 @@ export default function Home() {
                           <span className="font-bold text-white text-[11px]">
                             {isCheckingBalance
                               ? 'Fetching SPL Token Balance...'
-                              : MIN_REAL_REQUIRED > 0
-                                ? `${(realBalance ?? 0).toLocaleString()} / ${MIN_REAL_REQUIRED.toLocaleString()} $RWD`
+                              : MIN_HOLDING_REQUIRED > 0
+                                ? `${(realBalance ?? 0).toLocaleString()} / ${MIN_HOLDING_REQUIRED.toLocaleString()} $RWD`
                                 : `${(realBalance ?? 0).toLocaleString()} $RWD (No Min Required)`}
                           </span>
                         </div>

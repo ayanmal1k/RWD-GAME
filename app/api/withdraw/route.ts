@@ -27,21 +27,28 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Valid userAddress is required' }, { status: 400 });
     }
 
-    // Verify $RWD token balance on-chain
-    const rwdBalance = await fetchRealTokenBalance(userAddress);
-    if (rwdBalance < MIN_REAL_REQUIRED) {
-      return NextResponse.json(
-        {
-          error: `Access Denied: You must hold at least ${MIN_REAL_REQUIRED.toLocaleString()} $RWD tokens in your wallet to withdraw. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
-        },
-        { status: 403 }
-      );
+    // Load dynamic game settings from database
+    const { getGameSettings } = await import('@/lib/gameSettings');
+    const gameSettings = await getGameSettings();
+
+    // Verify $RWD token balance on-chain if minimum required > 0
+    if (gameSettings.minRwdRequired > 0) {
+      const rwdBalance = await fetchRealTokenBalance(userAddress);
+      if (rwdBalance < gameSettings.minRwdRequired) {
+        return NextResponse.json(
+          {
+            error: `Access Denied: You must hold at least ${gameSettings.minRwdRequired.toLocaleString()} $RWD tokens in your wallet to withdraw. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
+          },
+          { status: 403 }
+        );
+      }
     }
 
     const coinsToExchange = Number(amountCoins);
+    const minWithdraw = gameSettings.minWithdrawCoins || 1000;
 
-    if (isNaN(coinsToExchange) || coinsToExchange < 1000) {
-      return NextResponse.json({ error: 'Minimum withdrawal threshold is 1,000 coins' }, { status: 400 });
+    if (isNaN(coinsToExchange) || coinsToExchange < minWithdraw) {
+      return NextResponse.json({ error: `Minimum withdrawal threshold is ${minWithdraw.toLocaleString()} coins` }, { status: 400 });
     }
 
     // Fetch user record from Firestore
@@ -67,8 +74,9 @@ export async function POST(request: Request) {
       );
     }
 
-    // Exchange Ratio: 10 Coins = 1 Token
-    const tokensPaid = Number((coinsToExchange / 10).toFixed(4));
+    // Dynamic Exchange Ratio from Database: X Coins = 1 Token
+    const rate = gameSettings.coinsPerToken || 10;
+    const tokensPaid = Number((coinsToExchange / rate).toFixed(4));
 
     let txSignature = `SimulatedTx_${Math.random().toString(36).slice(2, 12)}_${Date.now()}`;
     let isSimulated = true;

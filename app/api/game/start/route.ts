@@ -11,9 +11,9 @@ import {
   getTreasuryWallet,
   getSolanaNetwork,
   getRwdMint,
-  GAME_FEE_AMOUNT,
   SESSION_TTL_MS,
 } from '@/lib/auth';
+import { getGameSettings } from '@/lib/gameSettings';
 
 const isMainnet = process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet' || process.env.NEXT_PUBLIC_SOLANA_NETWORK === 'mainnet-beta';
 const RPC_URL = process.env.NEXT_PUBLIC_SOLANA_RPC_URL || (isMainnet ? 'https://api.mainnet-beta.solana.com' : 'https://api.devnet.solana.com');
@@ -98,7 +98,8 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. VERIFY TRANSACTION ON-CHAIN
+    // 3. LOAD DYNAMIC SETTINGS & VERIFY TRANSACTION ON-CHAIN
+    const gameSettings = await getGameSettings();
     const connection = new Connection(RPC_URL, 'confirmed');
     const treasuryWallet = getTreasuryWallet();
     const rwdMint = getRwdMint();
@@ -108,13 +109,27 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
     }
 
+    // Dynamic Minimum RWD Holding Check
+    if (gameSettings.minRwdRequired > 0) {
+      const { fetchRwdTokenBalance } = await import('@/lib/solana');
+      const rwdBalance = await fetchRwdTokenBalance(walletAddress, connection);
+      if (rwdBalance < gameSettings.minRwdRequired) {
+        return NextResponse.json(
+          {
+            error: `Access Denied: Wallet must hold at least ${gameSettings.minRwdRequired.toLocaleString()} $RWD tokens to play. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
+          },
+          { status: 403 }
+        );
+      }
+    }
+
     const verificationResult = await verifyPaymentTransaction(
       connection,
       txSignature,
       walletAddress,
       treasuryWallet,
       rwdMint,
-      GAME_FEE_AMOUNT
+      gameSettings.gameFeeAmount
     );
 
     if (!verificationResult.valid) {

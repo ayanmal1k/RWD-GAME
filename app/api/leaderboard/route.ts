@@ -2,22 +2,13 @@ import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, collection, query, orderBy, limit, getDocs } from 'firebase/firestore';
 
+import { getGameSettings } from '@/lib/gameSettings';
+
 export async function GET() {
   try {
-    const settingsRef = doc(db, 'settings', 'leaderboard');
-    const settingsSnap = await getDoc(settingsRef);
+    const settings = await getGameSettings();
 
-    let settings = {
-      enabled: true,
-      startDate: '',
-      endDate: '',
-    };
-
-    if (settingsSnap.exists()) {
-      settings = settingsSnap.data() as any;
-    }
-
-    if (!settings.enabled) {
+    if (!settings.leaderboardEnabled) {
       return NextResponse.json({
         enabled: false,
         message: 'Leaderboard is currently disabled by Admin.',

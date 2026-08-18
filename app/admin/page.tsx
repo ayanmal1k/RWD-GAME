@@ -63,10 +63,14 @@ export default function AdminPage() {
   const [authError, setAuthError] = useState<string | null>(null);
   const [isAuthenticating, setIsAuthenticating] = useState(false);
 
-  // Leaderboard settings state
+  // Game economics & settings state
   const [isLeaderboardEnabled, setIsLeaderboardEnabled] = useState(true);
   const [startDate, setStartDate] = useState('');
   const [endDate, setEndDate] = useState('');
+  const [gameFeeAmount, setGameFeeAmount] = useState<number>(10);
+  const [minRwdRequired, setMinRwdRequired] = useState<number>(0);
+  const [coinsPerToken, setCoinsPerToken] = useState<number>(10);
+  const [minWithdrawCoins, setMinWithdrawCoins] = useState<number>(1000);
   const [isSavingSettings, setIsSavingSettings] = useState(false);
   const [saveSuccessMsg, setSaveSuccessMsg] = useState(false);
 
@@ -124,15 +128,19 @@ export default function AdminPage() {
     setInputPass('');
   };
 
-  // Fetch Admin Settings
+  // Fetch Admin Settings from DB
   const fetchSettings = async () => {
     try {
       const res = await fetch('/api/admin/settings');
       const data = await res.json();
       if (res.ok) {
-        setIsLeaderboardEnabled(Boolean(data.enabled));
+        setIsLeaderboardEnabled(data.leaderboardEnabled !== undefined ? Boolean(data.leaderboardEnabled) : Boolean(data.enabled));
         setStartDate(data.startDate || '');
         setEndDate(data.endDate || '');
+        if (typeof data.gameFeeAmount === 'number') setGameFeeAmount(data.gameFeeAmount);
+        if (typeof data.minRwdRequired === 'number') setMinRwdRequired(data.minRwdRequired);
+        if (typeof data.coinsPerToken === 'number') setCoinsPerToken(data.coinsPerToken);
+        if (typeof data.minWithdrawCoins === 'number') setMinWithdrawCoins(data.minWithdrawCoins);
       }
     } catch (err) {
       console.error('Failed to load admin settings:', err);
@@ -224,14 +232,19 @@ export default function AdminPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           enabled: isLeaderboardEnabled,
+          leaderboardEnabled: isLeaderboardEnabled,
           startDate,
           endDate,
+          gameFeeAmount: Number(gameFeeAmount) || 0,
+          minRwdRequired: Number(minRwdRequired) || 0,
+          coinsPerToken: Number(coinsPerToken) || 10,
+          minWithdrawCoins: Number(minWithdrawCoins) || 1000,
         }),
       });
 
       if (res.ok) {
         setSaveSuccessMsg(true);
-        setTimeout(() => setSaveSuccessMsg(false), 3000);
+        setTimeout(() => setSaveSuccessMsg(false), 3500);
       }
     } catch (err) {
       console.error('Error saving settings:', err);
@@ -423,7 +436,7 @@ export default function AdminPage() {
                 : 'text-purple-300/60 hover:text-fuchsia-300'
             }`}
           >
-            <Trophy className="w-3.5 h-3.5" /> LEADERBOARD
+            <Trophy className="w-3.5 h-3.5" /> GAME CONFIG & LEADERBOARD
           </button>
           <button
             onClick={() => setActiveTab('withdrawals')}
@@ -447,72 +460,193 @@ export default function AdminPage() {
           </button>
         </div>
 
-        {/* TAB 1: LEADERBOARD SETTINGS & TOP 10 PREVIEW */}
+        {/* TAB 1: GAME ECONOMICS & LEADERBOARD SETTINGS */}
         {activeTab === 'leaderboard' && (
           <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             className="space-y-6"
           >
-            {/* Form Card */}
+            {/* Game Economics & Settings Form Card */}
             <div className="bg-[#120722] border border-purple-500/30 rounded-3xl p-6 sm:p-8 space-y-6 shadow-2xl">
-              <h2 className="text-sm font-bold font-press-start text-fuchsia-300 flex items-center gap-2">
-                <Trophy className="w-4 h-4 text-purple-400" /> LEADERBOARD CONFIGURATION
-              </h2>
+              <div className="border-b border-purple-500/20 pb-3 flex items-center justify-between">
+                <h2 className="text-sm font-bold font-press-start text-fuchsia-300 flex items-center gap-2">
+                  <Coins className="w-4 h-4 text-purple-400" /> GAME ECONOMICS & TOKEN PARAMETERS
+                </h2>
+                <span className="text-[10px] font-mono text-purple-300/80 bg-purple-500/15 px-3 py-1 rounded-full border border-purple-500/25">
+                  Live Database Config
+                </span>
+              </div>
 
               <form onSubmit={handleSaveSettings} className="space-y-6">
-                {/* Toggle Switch */}
-                <div className="flex items-center justify-between p-4 bg-[#07030e] border border-purple-500/25 rounded-2xl">
-                  <div className="space-y-1">
-                    <span className="text-xs font-mono font-bold text-purple-200 block">ENABLE LEADERBOARD</span>
-                    <span className="text-[10px] font-mono text-purple-400/60 block">
-                      Turn leaderboard display ON or OFF for all players.
-                    </span>
+
+                {/* Section A: Token & Entry Parameters */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+
+                  {/* 1. Starting Game Fee ($RWD) */}
+                  <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
+                    <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
+                      <Coins className="w-3.5 h-3.5 text-fuchsia-400" /> STARTING GAME FEE ($RWD TOKENS)
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="1"
+                      value={gameFeeAmount}
+                      onChange={(e) => setGameFeeAmount(Number(e.target.value))}
+                      required
+                      className="w-full bg-transparent font-mono text-base font-bold text-purple-100 focus:outline-none"
+                      placeholder="10"
+                    />
+                    <p className="text-[9px] font-mono text-purple-400/60">
+                      Amount of $RWD tokens required to start a game run (transferred to Treasury).
+                    </p>
                   </div>
-                  <button
-                    type="button"
-                    onClick={() => setIsLeaderboardEnabled(!isLeaderboardEnabled)}
-                    className="cursor-pointer text-fuchsia-400 hover:scale-105 transition-transform"
-                  >
-                    {isLeaderboardEnabled ? (
-                      <ToggleRight className="w-10 h-10 text-fuchsia-400" />
-                    ) : (
-                      <ToggleLeft className="w-10 h-10 text-purple-950" />
-                    )}
-                  </button>
+
+                  {/* 2. Minimum $RWD Holdings Required to Play */}
+                  <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
+                    <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
+                      <ShieldCheck className="w-3.5 h-3.5 text-fuchsia-400" /> MIN $RWD HOLDING REQUIRED TO PLAY
+                    </label>
+                    <input
+                      type="number"
+                      min="0"
+                      step="10"
+                      value={minRwdRequired}
+                      onChange={(e) => setMinRwdRequired(Number(e.target.value))}
+                      required
+                      className="w-full bg-transparent font-mono text-base font-bold text-purple-100 focus:outline-none"
+                      placeholder="0"
+                    />
+                    <p className="text-[9px] font-mono text-purple-400/60">
+                      Minimum $RWD tokens a wallet must hold to be eligible to play (0 = no minimum).
+                    </p>
+                  </div>
+
+                  {/* 3. Coin-to-Token Exchange Rate */}
+                  <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
+                    <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
+                      <Sparkles className="w-3.5 h-3.5 text-fuchsia-400" /> COINS PER 1 $RWD TOKEN (EXCHANGE RATE)
+                    </label>
+                    <input
+                      type="number"
+                      min="1"
+                      step="1"
+                      value={coinsPerToken}
+                      onChange={(e) => setCoinsPerToken(Number(e.target.value))}
+                      required
+                      className="w-full bg-transparent font-mono text-base font-bold text-purple-100 focus:outline-none"
+                      placeholder="10"
+                    />
+                    <p className="text-[9px] font-mono text-purple-400/60">
+                      Exchange ratio: e.g. 10 coins = 1 $RWD token during Treasury withdrawal.
+                    </p>
+                  </div>
+
+                  {/* 4. Minimum Coin Withdrawal Threshold */}
+                  <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
+                    <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
+                      <ArrowDownToLine className="w-3.5 h-3.5 text-fuchsia-400" /> MIN COINS TO WITHDRAW
+                    </label>
+                    <input
+                      type="number"
+                      min="100"
+                      step="100"
+                      value={minWithdrawCoins}
+                      onChange={(e) => setMinWithdrawCoins(Number(e.target.value))}
+                      required
+                      className="w-full bg-transparent font-mono text-base font-bold text-purple-100 focus:outline-none"
+                      placeholder="1000"
+                    />
+                    <p className="text-[9px] font-mono text-purple-400/60">
+                      Minimum in-game coins threshold before a player can request a token withdrawal.
+                    </p>
+                  </div>
+
                 </div>
 
-                {/* Date Range Selectors */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
-                    <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-fuchsia-400" /> START DATE
-                    </label>
-                    <input
-                      type="date"
-                      value={startDate}
-                      onChange={(e) => setStartDate(e.target.value)}
-                      className="w-full bg-transparent font-mono text-sm font-bold text-purple-100 focus:outline-none cursor-pointer"
-                    />
+                {/* Section B: Leaderboard Controls */}
+                <div className="pt-3 border-t border-purple-500/20 space-y-4">
+                  <h3 className="text-xs font-bold font-press-start text-purple-200 flex items-center gap-2">
+                    <Trophy className="w-4 h-4 text-fuchsia-400" /> LEADERBOARD STATUS & CONTEST DATES
+                  </h3>
+
+                  {/* Toggle Switch */}
+                  <div className="flex items-center justify-between p-4 bg-[#07030e] border border-purple-500/25 rounded-2xl">
+                    <div className="space-y-1">
+                      <span className="text-xs font-mono font-bold text-purple-200 block">ENABLE LEADERBOARD</span>
+                      <span className="text-[10px] font-mono text-purple-400/60 block">
+                        Turn leaderboard display ON or OFF for all players.
+                      </span>
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => setIsLeaderboardEnabled(!isLeaderboardEnabled)}
+                      className="cursor-pointer text-fuchsia-400 hover:scale-105 transition-transform"
+                    >
+                      {isLeaderboardEnabled ? (
+                        <ToggleRight className="w-10 h-10 text-fuchsia-400" />
+                      ) : (
+                        <ToggleLeft className="w-10 h-10 text-purple-950" />
+                      )}
+                    </button>
                   </div>
 
-                  <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
-                    <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
-                      <Calendar className="w-3.5 h-3.5 text-fuchsia-400" /> END DATE
-                    </label>
-                    <input
-                      type="date"
-                      value={endDate}
-                      onChange={(e) => setEndDate(e.target.value)}
-                      className="w-full bg-transparent font-mono text-sm font-bold text-purple-100 focus:outline-none cursor-pointer"
-                    />
+                  {/* Date Range Selectors */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
+                      <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-fuchsia-400" /> START DATE
+                      </label>
+                      <input
+                        type="date"
+                        value={startDate}
+                        onChange={(e) => setStartDate(e.target.value)}
+                        className="w-full bg-transparent font-mono text-sm font-bold text-purple-100 focus:outline-none cursor-pointer"
+                      />
+                    </div>
+
+                    <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
+                      <label className="text-[10px] font-mono font-bold text-purple-300 uppercase flex items-center gap-1.5">
+                        <Calendar className="w-3.5 h-3.5 text-fuchsia-400" /> END DATE
+                      </label>
+                      <input
+                        type="date"
+                        value={endDate}
+                        onChange={(e) => setEndDate(e.target.value)}
+                        className="w-full bg-transparent font-mono text-sm font-bold text-purple-100 focus:outline-none cursor-pointer"
+                      />
+                    </div>
+                  </div>
+                </div>
+
+                {/* Live Economics Summary Preview Card */}
+                <div className="p-4 bg-gradient-to-r from-[#140b24] via-[#241340] to-[#140b24] border border-purple-500/35 rounded-2xl flex flex-wrap items-center justify-around gap-3 text-center">
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Game Fee</span>
+                    <span className="font-press-start text-xs text-fuchsia-300">{gameFeeAmount} $RWD</span>
+                  </div>
+                  <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Min Holding Gate</span>
+                    <span className="font-press-start text-xs text-purple-200">{minRwdRequired > 0 ? `${minRwdRequired} $RWD` : 'No Min'}</span>
+                  </div>
+                  <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Exchange Rate</span>
+                    <span className="font-press-start text-xs text-fuchsia-300">{coinsPerToken} Coins = 1 $RWD</span>
+                  </div>
+                  <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
+                  <div className="space-y-0.5">
+                    <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Min Withdrawal</span>
+                    <span className="font-press-start text-xs text-purple-200">{minWithdrawCoins.toLocaleString()} Coins (= {(minWithdrawCoins / (coinsPerToken || 1)).toFixed(2)} $RWD)</span>
                   </div>
                 </div>
 
                 {/* Save Success Alert */}
                 {saveSuccessMsg && (
-                  <div className="p-4 bg-purple-500/15 border border-purple-500/40 rounded-2xl flex items-center gap-2 text-xs font-mono text-fuchsia-300 font-bold">
-                    <CheckCircle2 className="w-4 h-4 text-fuchsia-400" /> Leaderboard settings saved successfully!
+                  <div className="p-4 bg-purple-500/20 border border-fuchsia-400/50 rounded-2xl flex items-center gap-2 text-xs font-mono text-fuchsia-300 font-bold shadow-[0_0_15px_rgba(217,70,239,0.3)]">
+                    <CheckCircle2 className="w-4 h-4 text-fuchsia-400" /> Game parameters & Leaderboard settings saved to database successfully!
                   </div>
                 )}
 
@@ -522,7 +656,7 @@ export default function AdminPage() {
                   disabled={isSavingSettings}
                   className="w-full py-4 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 hover:from-purple-500 hover:to-fuchsia-400 text-white font-bold font-press-start text-xs rounded-2xl shadow-[0_0_20px_rgba(168,85,247,0.6)] transition-all cursor-pointer disabled:opacity-50 border border-fuchsia-300"
                 >
-                  {isSavingSettings ? 'SAVING SETTINGS...' : 'SAVE LEADERBOARD CONFIGURATION'}
+                  {isSavingSettings ? 'SAVING TO DATABASE...' : 'SAVE ALL GAME SETTINGS'}
                 </button>
               </form>
             </div>

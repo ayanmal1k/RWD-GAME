@@ -67,7 +67,7 @@ export interface PayGameFeeResult {
  * @returns The transaction signature.
  * @throws If the wallet rejects, the transaction fails, or config is missing.
  */
-export async function payGameFee(playerAddress: string): Promise<PayGameFeeResult> {
+export async function payGameFee(playerAddress: string, customFeeAmount?: number): Promise<PayGameFeeResult> {
   const treasuryAddress = getTreasuryWallet();
   if (!treasuryAddress) {
     throw new Error('Treasury wallet not configured. Check environment variables.');
@@ -78,7 +78,7 @@ export async function payGameFee(playerAddress: string): Promise<PayGameFeeResul
     throw new Error('RWD token mint address not configured for current network.');
   }
 
-  const feeAmount = getGameFeeAmount();
+  const feeAmount = typeof customFeeAmount === 'number' && customFeeAmount >= 0 ? customFeeAmount : getGameFeeAmount();
   if (feeAmount <= 0) {
     throw new Error('Invalid game fee amount.');
   }

@@ -19,7 +19,8 @@ import {
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { CoinIcon } from '@/components/CoinIcon';
-import { MIN_REAL_REQUIRED } from '@/lib/solana';
+import { MIN_REAL_REQUIRED, RWD_TOKEN_MINT } from '@/lib/solana';
+import { useGameSettings } from '@/hooks/useGameSettings';
 
 interface WithdrawalRecord {
   id: string;
@@ -35,10 +36,15 @@ interface WithdrawalRecord {
 
 export default function WithdrawPage() {
   const { primaryWallet, setShowAuthFlow, realBalance, isCheckingBalance, isEligible } = useAppWallet();
+  const { settings: gameSettings } = useGameSettings();
   const address = primaryWallet?.address;
 
+  const coinsPerToken = gameSettings.coinsPerToken || 10;
+  const minWithdraw = gameSettings.minWithdrawCoins || 1000;
+  const minHolding = gameSettings.minRwdRequired;
+
   const [bankCoins, setBankCoins] = useState<number>(0);
-  const [exchangeCoins, setExchangeCoins] = useState<string>('1000');
+  const [exchangeCoins, setExchangeCoins] = useState<string>(String(minWithdraw));
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [txSuccess, setTxSuccess] = useState<any | null>(null);
@@ -46,9 +52,9 @@ export default function WithdrawPage() {
   const [history, setHistory] = useState<WithdrawalRecord[]>([]);
   const [isLoadingHistory, setIsLoadingHistory] = useState(false);
 
-  // Calculate estimated tokens (10 coins = 1 token)
+  // Dynamic Exchange Calculation from Database
   const coinsNum = Number(exchangeCoins) || 0;
-  const estimatedTokens = coinsNum > 0 ? (coinsNum / 10) : 0;
+  const estimatedTokens = coinsNum > 0 ? (coinsNum / coinsPerToken) : 0;
 
   // Subscribe to user bank balance
   useEffect(() => {
@@ -121,8 +127,8 @@ export default function WithdrawPage() {
       return;
     }
 
-    if (coinsNum < 1000) {
-      setErrorMsg('Minimum withdrawal threshold is 1,000 coins.');
+    if (isNaN(coinsNum) || coinsNum < minWithdraw) {
+      setErrorMsg(`Minimum withdrawal threshold is ${minWithdraw.toLocaleString()} coins.`);
       return;
     }
 
@@ -171,19 +177,19 @@ export default function WithdrawPage() {
             TREASURY EXCHANGE
           </h1>
           <p className="text-xs sm:text-sm font-mono text-purple-200/80 max-w-xl mx-auto">
-            Convert your hard-earned climbing coins into <strong className="text-fuchsia-300">$RWD</strong> (Rewind Static) tokens. Paid directly from our Solana treasury wallet.
+            Convert your hard-earned climbing coins into <strong className="text-fuchsia-300">$RWD</strong> tokens. Paid directly from our Solana treasury wallet.
           </p>
 
           {/* $RWD Token Address & Minimum Limit Badges */}
           <div className="flex flex-wrap items-center justify-center gap-3">
-            {process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS && (
+            {RWD_TOKEN_MINT && (
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-[#140b24] border border-purple-500/30 rounded-xl text-xs font-mono text-purple-200">
                 <span className="text-[10px] text-fuchsia-400 font-bold uppercase">$RWD MINT:</span>
                 <span className="font-bold text-purple-100 select-all font-mono">
-                  {process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS}
+                  {RWD_TOKEN_MINT}
                 </span>
                 <a
-                  href={`https://solscan.io/token/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS}`}
+                  href={`https://solscan.io/token/${RWD_TOKEN_MINT}`}
                   target="_blank"
                   rel="noopener noreferrer"
                   className="text-fuchsia-400 hover:text-white ml-1 inline-flex items-center"
@@ -197,7 +203,7 @@ export default function WithdrawPage() {
             <div className="inline-flex items-center gap-1.5 px-3.5 py-1.5 bg-[#140b24] border border-purple-500/30 rounded-xl text-xs font-mono text-purple-200">
               <ShieldCheck className="w-3.5 h-3.5 text-fuchsia-400" />
               <span className="text-[10px] text-purple-300 font-bold uppercase">MIN WITHDRAWAL:</span>
-              <span className="font-bold text-fuchsia-300 font-mono">1,000 COINS (= 100 $RWD)</span>
+              <span className="font-bold text-fuchsia-300 font-mono">{minWithdraw.toLocaleString()} COINS (= {(minWithdraw / coinsPerToken).toLocaleString()} $RWD)</span>
             </div>
           </div>
         </div>
@@ -243,7 +249,7 @@ export default function WithdrawPage() {
             </h2>
             <div className="inline-flex items-center gap-1.5 px-3 py-1 bg-purple-500/15 border border-purple-500/30 rounded-xl text-[11px] font-mono text-purple-200">
               <span>MIN LIMIT:</span>
-              <span className="font-bold text-fuchsia-300">1,000 COINS</span>
+              <span className="font-bold text-fuchsia-300">{minWithdraw.toLocaleString()} COINS</span>
             </div>
           </div>
 
@@ -263,14 +269,14 @@ export default function WithdrawPage() {
                       $RWD TOKEN HOLDINGS REQUIREMENT
                     </span>
                     <span className="text-white text-xs">
-                      Current Balance: <strong className="text-fuchsia-300">{isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} $RWD`}</strong> {MIN_REAL_REQUIRED > 0 ? `(Min Required: ${MIN_REAL_REQUIRED.toLocaleString()} $RWD)` : '(No Min Required)'}
+                      Current Balance: <strong className="text-fuchsia-300">{isCheckingBalance ? 'Fetching SPL Token Balance...' : `${(realBalance ?? 0).toLocaleString()} $RWD`}</strong> {minHolding > 0 ? `(Min Required: ${minHolding.toLocaleString()} $RWD)` : '(No Min Required)'}
                     </span>
                   </div>
                 </div>
                 <div className="flex items-center gap-2">
                   {!isEligible && !isCheckingBalance && (
                     <a
-                      href={`https://pump.fun/coin/${process.env.NEXT_PUBLIC_REAL_TOKEN_ADDRESS || 'EVNWDT4QtZv4tBGMaFpygGq8bxEEcZMUZxMmhtaspump'}`}
+                      href={`https://pump.fun/coin/${RWD_TOKEN_MINT}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="px-3.5 py-2 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 hover:from-purple-500 hover:to-fuchsia-400 text-white font-press-start text-[9px] font-extrabold rounded-xl border border-fuchsia-300 shadow-[0_0_15px_rgba(168,85,247,0.5)] flex items-center gap-1.5 transition-all transform hover:scale-105 active:scale-95"
@@ -295,18 +301,18 @@ export default function WithdrawPage() {
               {/* Input Coins */}
               <div className="bg-[#07030e] border border-purple-500/25 rounded-2xl p-4 space-y-2">
                 <label className="text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <CoinIcon className="w-4 h-4" /> COINS TO WITHDRAW (MIN: 1,000)
+                  <CoinIcon className="w-4 h-4" /> COINS TO WITHDRAW (MIN: {minWithdraw.toLocaleString()})
                 </label>
                 <div className="flex items-center gap-2">
                   <CoinIcon className="w-6 h-6" />
                   <input
                     type="number"
-                    min="1000"
+                    min={minWithdraw}
                     step="100"
                     value={exchangeCoins}
                     onChange={(e) => setExchangeCoins(e.target.value)}
                     className="w-full bg-transparent font-mono text-xl font-bold text-purple-100 focus:outline-none placeholder-purple-500/30"
-                    placeholder="1000"
+                    placeholder={String(minWithdraw)}
                   />
                 </div>
               </div>
@@ -314,12 +320,12 @@ export default function WithdrawPage() {
               {/* Estimated Token Output */}
               <div className="bg-[#140b24] border border-purple-500/30 rounded-2xl p-4 space-y-2">
                 <label className="text-[10px] font-mono font-bold text-purple-300 uppercase tracking-wider flex items-center gap-1.5">
-                  <img src="/logo.jpg" alt="$RWD" className="w-4 h-4 rounded-full object-cover border border-fuchsia-400/50" /> ESTIMATED $RWD TOKENS (10 COINS = 1 TOKEN)
+                  <img src="/logo.jpg" alt="$RWD" className="w-4 h-4 rounded-full object-cover border border-fuchsia-400/50" /> ESTIMATED $RWD TOKENS ({coinsPerToken} COINS = 1 $RWD)
                 </label>
                 <div className="flex items-center gap-2">
                   <img src="/logo.jpg" alt="$RWD" className="w-6 h-6 rounded-full object-cover border border-fuchsia-400/50" />
                   <span className="font-mono text-xl font-extrabold text-fuchsia-300 flex items-center gap-1.5">
-                    {estimatedTokens.toLocaleString()} <span className="text-xs text-purple-300">$RWD</span>
+                    {estimatedTokens.toLocaleString(undefined, { maximumFractionDigits: 4 })} <span className="text-xs text-purple-300">$RWD</span>
                   </span>
                 </div>
               </div>

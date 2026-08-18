@@ -1,9 +1,40 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, setDoc, updateDoc, addDoc, collection, serverTimestamp, increment } from 'firebase/firestore';
+import { doc, getDoc, updateDoc, addDoc, collection, setDoc, serverTimestamp, increment } from 'firebase/firestore';
 
+import {
+  getAuthenticatedWallet,
+  verifySessionToken,
+} from '@/lib/auth';
+
+/**
+ * POST /api/game/end
+ *
+ * Requires:
+ * - Auth cookie (wallet ownership proof)
+ * - Body: { sessionId, token, score, coins }
+ *
+ * Flow:
+ * 1. Authenticate wallet from cookie
+ * 2. Load session from gameSessions collection
+ * 3. Verify session ownership (wallet matches)
+ * 4. Verify session is ACTIVE
+ * 5. Verify session not expired
+ * 6. Verify HMAC token (constant-time)
+ * 7. Anti-cheat validation
+ * 8. Persist results
+ */
 export async function POST(request: Request) {
   try {
+    // 1. AUTHENTICATE
+    const walletAddress = getAuthenticatedWallet(request);
+    if (!walletAddress) {
+      return NextResponse.json(
+        { error: 'Authentication required. Please connect and verify your wallet.' },
+        { status: 401 }
+      );
+    }
+
     const body = await request.json().catch(() => ({}));
     const { sessionId, token, score, coins } = body;
 
@@ -15,7 +46,8 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Score and coins must be non-negative' }, { status: 400 });
     }
 
-    const sessionRef = doc(db, 'game_sessions', sessionId);
+    // 2. LOAD SESSION
+    const sessionRef = doc(db, 'gameSessions', sessionId);
     const sessionSnap = await getDoc(sessionRef);
 
     if (!sessionSnap.exists()) {
@@ -24,41 +56,69 @@ export async function POST(request: Request) {
 
     const session = sessionSnap.data();
 
-    // Single-use token / status verification
+    // 3. VERIFY SESSION OWNERSHIP — wallet from cookie must match session
+    if (session.userAddress !== walletAddress) {
+      return NextResponse.json({ error: 'Session does not belong to this wallet' }, { status: 403 });
+    }
+
+    // 4. VERIFY SESSION STATE
     if (session.status !== 'ACTIVE') {
-      return NextResponse.json({ error: 'Game session has already ended or expired' }, { status: 400 });
+      return NextResponse.json(
+        { error: 'Game session has already ended or expired' },
+        { status: 400 }
+      );
     }
 
-    // Token authenticity check
-    if (session.token !== token) {
-      return NextResponse.json({ error: 'Session token mismatch' }, { status: 403 });
-    }
-
+    // 5. VERIFY SESSION NOT EXPIRED
     const now = Date.now();
-    const elapsedSeconds = Math.max(1, Math.round((now - session.startTime) / 1000));
+    if (now > session.expiresAt) {
+      // Mark as expired
+      await updateDoc(sessionRef, {
+        status: 'EXPIRED',
+        expiredAt: serverTimestamp(),
+      });
+      return NextResponse.json(
+        { error: 'Game session has expired (30 minute limit)' },
+        { status: 400 }
+      );
+    }
 
-    // Anti-cheat verification checks
-    const MAX_SCORE_PER_SEC = 120; // Realistic maximum climb score per second
-    const MAX_COINS_PER_SEC = 3.0; // Realistic maximum coins collected per second
+    // 6. VERIFY HMAC TOKEN (constant-time comparison)
+    const tokenValid = verifySessionToken(token, sessionId, walletAddress, session.expiresAt);
+    if (!tokenValid) {
+      return NextResponse.json({ error: 'Invalid session token' }, { status: 403 });
+    }
+
+    // 7. ANTI-CHEAT VALIDATION
+    const elapsedSeconds = Math.max(1, Math.round((now - session.createdAt) / 1000));
+
+    const MAX_SCORE_PER_SEC = 120;
+    const MAX_COINS_PER_SEC = 3.0;
+    const MAX_TOTAL_SCORE_FOR_DURATION = MAX_SCORE_PER_SEC * elapsedSeconds;
+    const MAX_TOTAL_COINS_FOR_DURATION = MAX_COINS_PER_SEC * elapsedSeconds;
 
     let flagReason: string | null = null;
 
     if (score > 0 && elapsedSeconds < 2) {
       flagReason = `Impossible run time (${elapsedSeconds}s for score ${score})`;
     } else if (score / elapsedSeconds > MAX_SCORE_PER_SEC) {
-      flagReason = `Score rate threshold exceeded (${(score / elapsedSeconds).toFixed(1)} pts/sec > ${MAX_SCORE_PER_SEC} max)`;
+      flagReason = `Score rate exceeded (${(score / elapsedSeconds).toFixed(1)} pts/sec > ${MAX_SCORE_PER_SEC} max)`;
     } else if (coins / elapsedSeconds > MAX_COINS_PER_SEC) {
-      flagReason = `Coin rate threshold exceeded (${(coins / elapsedSeconds).toFixed(1)} coins/sec > ${MAX_COINS_PER_SEC} max)`;
+      flagReason = `Coin rate exceeded (${(coins / elapsedSeconds).toFixed(1)} coins/sec > ${MAX_COINS_PER_SEC} max)`;
+    } else if (score > MAX_TOTAL_SCORE_FOR_DURATION) {
+      flagReason = `Score exceeds maximum for duration (${score} > ${MAX_TOTAL_SCORE_FOR_DURATION} for ${elapsedSeconds}s)`;
+    } else if (coins > MAX_TOTAL_COINS_FOR_DURATION) {
+      flagReason = `Coins exceed maximum for duration (${coins} > ${Math.round(MAX_TOTAL_COINS_FOR_DURATION)} for ${elapsedSeconds}s)`;
     }
 
     if (flagReason) {
-      console.warn(`[ANTI-CHEAT TRIGGERED] User ${session.userAddress} flagged: ${flagReason}`);
+      console.warn(`[ANTI-CHEAT FLAGGED] User ${walletAddress} flagged: ${flagReason}`);
       await updateDoc(sessionRef, {
-        status: 'FLAGGED_CHEATING',
+        status: 'FLAGGED',
         flagReason,
         attemptedScore: score,
         attemptedCoins: coins,
-        endedAt: serverTimestamp(),
+        flaggedAt: serverTimestamp(),
       });
 
       return NextResponse.json(
@@ -67,18 +127,19 @@ export async function POST(request: Request) {
       );
     }
 
+    // 8. PERSIST RESULTS
     // Mark session as completed
     await updateDoc(sessionRef, {
       status: 'COMPLETED',
       finalScore: score,
       finalCoins: coins,
       durationSeconds: elapsedSeconds,
-      endedAt: serverTimestamp(),
+      completedAt: serverTimestamp(),
     });
 
     // Log verified run to game_history
     await addDoc(collection(db, 'game_history'), {
-      userAddress: session.userAddress,
+      userAddress: walletAddress,
       score,
       coins,
       durationSeconds: elapsedSeconds,
@@ -89,15 +150,15 @@ export async function POST(request: Request) {
 
     // Deposit verified coins into user bank in Firestore
     if (coins > 0) {
-      const userRef = doc(db, 'users', session.userAddress);
+      const userRef = doc(db, 'users', walletAddress);
       try {
         await updateDoc(userRef, {
           totalCoins: increment(coins),
           updatedAt: serverTimestamp(),
         });
-      } catch (err) {
+      } catch {
         await setDoc(userRef, {
-          address: session.userAddress,
+          address: walletAddress,
           totalCoins: coins,
           createdAt: serverTimestamp(),
         }, { merge: true });

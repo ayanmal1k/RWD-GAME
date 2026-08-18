@@ -2918,7 +2918,7 @@ export class GameEngine {
     if (blinkVal === 0) {
       this.ctx.font = '12px "Press Start 2P", monospace';
       this.ctx.fillStyle = '#c084fc';
-      this.ctx.fillText('CLICK RESTART TO TRY AGAIN', this.canvas.width / 2, 540);
+      this.ctx.fillText('CLICK RETURN TO GO BACK', this.canvas.width / 2, 540);
     }
 
     this.ctx.restore();

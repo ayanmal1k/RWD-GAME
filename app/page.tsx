@@ -8,6 +8,7 @@ import { useAppWallet } from '@/components/DynamicProvider';
 import { db } from '@/lib/firebase';
 import { doc, getDoc, setDoc, addDoc, collection, query, orderBy, limit, getDocs, serverTimestamp } from 'firebase/firestore';
 import { MIN_REAL_REQUIRED } from '@/lib/solana';
+import { payGameFee } from '@/lib/payGameFee';
 import {
   Pause,
   Volume2,
@@ -38,7 +39,13 @@ export default function Home() {
   const canvasRef = useRef<HTMLCanvasElement | null>(null);
   const engineRef = useRef<GameEngine | null>(null);
 
-  const { primaryWallet, setShowAuthFlow, realBalance, isCheckingBalance, isEligible } = useAppWallet();
+  const { primaryWallet, setShowAuthFlow, realBalance, isCheckingBalance, isEligible, isAuthenticated, isAuthenticating } = useAppWallet();
+
+  // Payment flow state
+  const [paymentStatus, setPaymentStatus] = useState<'idle' | 'pending' | 'confirming' | 'error'>('idle');
+  const [paymentError, setPaymentError] = useState<string | null>(null);
+
+  const GAME_FEE = Number(process.env.NEXT_PUBLIC_GAME_FEE_AMOUNT || 10);
 
   const [gameState, setGameState] = useState<'START' | 'PLAYING' | 'PAUSED' | 'GAME_OVER'>('START');
   const [score, setScore] = useState(0);
@@ -228,6 +235,8 @@ export default function Home() {
     }
     if (isCheckingBalance) return;
     if (!isEligible) return;
+    if (!isAuthenticated || isAuthenticating) return;
+    if (paymentStatus === 'pending' || paymentStatus === 'confirming') return;
 
     if (isMobile && !isFullscreen) {
       setIsFullscreen(true);
@@ -244,38 +253,56 @@ export default function Home() {
   }, [primaryWallet, isEligible, isCheckingBalance, gameState]);
 
   const handleStartRestart = async () => {
-    if (primaryWallet && !isEligible) {
+    if (!primaryWallet?.address) return;
+    if (!isEligible) {
       console.warn(`Blocked game start: Wallet holds less than ${MIN_REAL_REQUIRED} $REAL tokens`);
       return;
     }
-
-    // Initiate secure game session on server
-    if (primaryWallet?.address) {
-      try {
-        const res = await fetch('/api/game/start', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ userAddress: primaryWallet.address }),
-        });
-        const data = await res.json();
-        if (res.ok && data.sessionId) {
-          activeSessionRef.current = { sessionId: data.sessionId, token: data.token };
-          console.log("Anti-cheat session created:", data.sessionId);
-        } else if (!res.ok && data.error) {
-          console.warn("Session start denied by server:", data.error);
-          return;
-        }
-      } catch (err) {
-        console.error("Error creating anti-cheat session:", err);
-      }
+    if (!isAuthenticated) {
+      console.warn('Blocked game start: Wallet not authenticated');
+      return;
     }
 
-    const characterPool: CharacterId[] = ['red', 'blue', 'orange', 'green'];
-    const chosenCharacter: CharacterId = selectedCharacter ?? characterPool[Math.floor(Math.random() * characterPool.length)];
+    // Reset payment state
+    setPaymentError(null);
+    setPaymentStatus('pending');
 
-    if (engineRef.current) {
-      engineRef.current.setCharacter(chosenCharacter);
-      engineRef.current.startGame();
+    try {
+      // Step 1: Build and send the 10 RWD payment transaction
+      const { txSignature } = await payGameFee(primaryWallet.address);
+      console.log('Payment tx submitted:', txSignature);
+
+      // Step 2: Server verifies the finalized transaction and creates session
+      setPaymentStatus('confirming');
+
+      const res = await fetch('/api/game/start', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ txSignature }),
+      });
+      const data = await res.json();
+
+      if (!res.ok || !data.sessionId) {
+        throw new Error(data.error || 'Failed to start game session');
+      }
+
+      activeSessionRef.current = { sessionId: data.sessionId, token: data.token };
+      console.log('Game session created:', data.sessionId);
+
+      setPaymentStatus('idle');
+
+      // Step 3: Start the game
+      const characterPool: CharacterId[] = ['red', 'blue', 'orange', 'green'];
+      const chosenCharacter: CharacterId = selectedCharacter ?? characterPool[Math.floor(Math.random() * characterPool.length)];
+
+      if (engineRef.current) {
+        engineRef.current.setCharacter(chosenCharacter);
+        engineRef.current.startGame();
+      }
+    } catch (err: any) {
+      console.error('Payment/session error:', err);
+      setPaymentStatus('error');
+      setPaymentError(err?.message || 'Payment failed. Please try again.');
     }
   };
 
@@ -283,9 +310,11 @@ export default function Home() {
     const handleSpaceStart = (e: KeyboardEvent) => {
       if (
         e.code === 'Space' &&
-        (gameState === 'START' || gameState === 'GAME_OVER') &&
+        gameState === 'START' &&
         !showHistoryModal &&
-        !showLeaderboardModal
+        !showLeaderboardModal &&
+        isAuthenticated &&
+        paymentStatus === 'idle'
       ) {
         e.preventDefault();
         handlePlayClick();
@@ -293,7 +322,7 @@ export default function Home() {
     };
     window.addEventListener('keydown', handleSpaceStart);
     return () => window.removeEventListener('keydown', handleSpaceStart);
-  }, [gameState, showHistoryModal, showLeaderboardModal, primaryWallet, isEligible, isCheckingBalance, selectedCharacter]);
+  }, [gameState, showHistoryModal, showLeaderboardModal, primaryWallet, isEligible, isCheckingBalance, selectedCharacter, isAuthenticated, paymentStatus]);
 
   const toggleFullscreen = () => {
     const newVal = !isFullscreen;
@@ -465,25 +494,38 @@ export default function Home() {
                 <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 w-full max-w-sm justify-center shrink-0">
                   <button
                     onClick={handlePlayClick}
-                    disabled={!!primaryWallet && (!isEligible || isCheckingBalance)}
+                    disabled={!!primaryWallet && (!isEligible || isCheckingBalance || !isAuthenticated || isAuthenticating || paymentStatus === 'pending' || paymentStatus === 'confirming')}
                     className={`w-full sm:w-auto px-5 py-3 sm:px-6 sm:py-3.5 font-bold font-press-start text-[9px] sm:text-[10px] rounded-2xl border-2 sm:border-4 transition-all flex items-center justify-center gap-1.5 leading-tight ${!primaryWallet
                       ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer transform hover:scale-105 active:scale-95'
-                      : isCheckingBalance
+                      : isCheckingBalance || isAuthenticating
                         ? 'bg-purple-500/20 text-fuchsia-300 border-purple-500/40 cursor-wait animate-pulse'
-                        : isEligible
-                          ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer transform hover:scale-105 active:scale-95'
-                          : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
+                        : paymentStatus === 'pending' || paymentStatus === 'confirming'
+                          ? 'bg-yellow-500/20 text-yellow-300 border-yellow-500/40 cursor-wait animate-pulse'
+                          : isEligible && isAuthenticated
+                            ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer transform hover:scale-105 active:scale-95'
+                            : 'bg-red-950/80 text-red-400 border-red-500/50 cursor-not-allowed opacity-80 shadow-[0_0_15px_rgba(239,68,68,0.2)]'
                       }`}
                   >
-                    {!!primaryWallet && !isEligible && !isCheckingBalance && <Lock className="w-3.5 h-3.5 text-red-400 shrink-0" />}
+                    {!!primaryWallet && !isEligible && !isCheckingBalance && !isAuthenticating && <Lock className="w-3.5 h-3.5 text-red-400 shrink-0" />}
                     {!primaryWallet
                       ? 'CONNECT TO PLAY'
-                      : isCheckingBalance
-                        ? 'CHECKING $RWD...'
-                        : isEligible
-                          ? 'PLAY NOW'
-                          : 'NEED $RWD TO PLAY'}
+                      : isAuthenticating
+                        ? 'VERIFYING WALLET...'
+                        : isCheckingBalance
+                          ? 'CHECKING $RWD...'
+                          : !isAuthenticated
+                            ? 'SIGN TO VERIFY'
+                            : paymentStatus === 'pending'
+                              ? 'CONFIRM IN WALLET...'
+                              : paymentStatus === 'confirming'
+                                ? 'CONFIRMING PAYMENT...'
+                                : isEligible
+                                  ? `PLAY (${GAME_FEE} RWD)`
+                                  : 'NEED $RWD TO PLAY'}
                   </button>
+                  {paymentError && paymentStatus === 'error' && (
+                    <p className="text-[8px] font-mono text-red-400 mt-1 text-center max-w-sm">{paymentError}</p>
+                  )}
                   <div className="grid grid-cols-2 gap-2 sm:flex sm:gap-3">
                     <button
                       onClick={handleOpenHistory}
@@ -616,10 +658,10 @@ export default function Home() {
                 {/* ACTION BUTTONS */}
                 <div className="flex flex-col sm:flex-row gap-2.5 w-full max-w-sm justify-center shrink-0">
                   <button
-                    onClick={handlePlayClick}
+                    onClick={() => { setGameState('START'); if (isMobile) setIsFullscreen(false); }}
                     className="w-full sm:w-auto px-6 py-3 bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white font-extrabold font-press-start text-[10px] rounded-2xl border-2 border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer transform hover:scale-105 active:scale-95 transition-all"
                   >
-                    TRY AGAIN [SPACE]
+                    RETURN
                   </button>
                   <button
                     onClick={handleOpenHistory}

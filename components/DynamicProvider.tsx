@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import { DynamicContextProvider, useDynamicContext } from '@dynamic-labs/sdk-react-core';
 import { SolanaWalletConnectors } from '@dynamic-labs/solana';
 
@@ -16,6 +16,10 @@ interface WalletContextType {
   isCheckingBalance: boolean;
   isEligible: boolean;
   refetchBalance: () => Promise<void>;
+  /** Whether the wallet has been authenticated via signature challenge. */
+  isAuthenticated: boolean;
+  /** Whether authentication is currently in progress. */
+  isAuthenticating: boolean;
 }
 
 const WalletContext = createContext<WalletContextType>({
@@ -28,11 +32,28 @@ const WalletContext = createContext<WalletContextType>({
   isCheckingBalance: false,
   isEligible: false,
   refetchBalance: async () => {},
+  isAuthenticated: false,
+  isAuthenticating: false,
 });
+
+/**
+ * Get the Solana wallet provider from the browser (Phantom / Solflare).
+ */
+function getWalletProvider(): any {
+  if (typeof window === 'undefined') return null;
+  return (
+    (window as any).solana ||
+    (window as any).phantom?.solana ||
+    (window as any).solflare ||
+    null
+  );
+}
 
 function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
   const [nativeAddress, setNativeAddress] = useState<string | null>(null);
   const [walletError, setWalletError] = useState<string | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [isAuthenticating, setIsAuthenticating] = useState(false);
 
   // Try to safely access Dynamic Context
   let dynamicWalletAddress: string | null = null;
@@ -80,6 +101,92 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
   // Track $REAL Token balance using custom hook
   const { realBalance, isCheckingBalance, isEligible, refetchBalance } = useRealTokenBalance(activeAddress);
 
+  // -------------------------------------------------------------------------
+  // Wallet Authentication via Signature Challenge
+  // -------------------------------------------------------------------------
+  const authenticateWallet = useCallback(async (address: string) => {
+    if (isAuthenticating) return;
+    setIsAuthenticating(true);
+
+    try {
+      // Step 1: Request challenge nonce from server
+      const challengeRes = await fetch('/api/auth/challenge', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ walletAddress: address }),
+      });
+
+      if (!challengeRes.ok) {
+        throw new Error('Failed to get auth challenge');
+      }
+
+      const { nonce } = await challengeRes.json();
+
+      // Step 2: Sign the nonce with the wallet
+      const provider = getWalletProvider();
+      if (!provider) {
+        throw new Error('No wallet provider available for signing');
+      }
+
+      // Encode the nonce as bytes for signing
+      const messageBytes = new TextEncoder().encode(nonce);
+      let signatureBase64: string;
+
+      if (provider.signMessage) {
+        // Phantom / Solflare signMessage returns { signature: Uint8Array }
+        const result = await provider.signMessage(messageBytes, 'utf8');
+        const sigBytes = result.signature || result;
+
+        if (sigBytes instanceof Uint8Array) {
+          signatureBase64 = btoa(String.fromCharCode(...sigBytes));
+        } else if (typeof sigBytes === 'string') {
+          signatureBase64 = sigBytes;
+        } else {
+          throw new Error('Unexpected signature format');
+        }
+      } else {
+        throw new Error('Wallet does not support message signing');
+      }
+
+      // Step 3: Submit signature for verification
+      const verifyRes = await fetch('/api/auth/verify', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          walletAddress: address,
+          nonce,
+          signature: signatureBase64,
+        }),
+      });
+
+      if (!verifyRes.ok) {
+        const data = await verifyRes.json().catch(() => ({}));
+        throw new Error(data.error || 'Auth verification failed');
+      }
+
+      setIsAuthenticated(true);
+      console.log('Wallet authenticated successfully:', address);
+    } catch (err: any) {
+      console.error('Wallet authentication failed:', err);
+      setIsAuthenticated(false);
+      // Don't set a walletError here — the user rejected the signature prompt
+      // or there was a network issue. They can still see their balance, etc.
+    } finally {
+      setIsAuthenticating(false);
+    }
+  }, [isAuthenticating]);
+
+  // Auto-authenticate when wallet address becomes available
+  useEffect(() => {
+    if (activeAddress && !isAuthenticated && !isAuthenticating) {
+      authenticateWallet(activeAddress);
+    }
+    // Reset auth state when wallet disconnects
+    if (!activeAddress) {
+      setIsAuthenticated(false);
+    }
+  }, [activeAddress]); // eslint-disable-line react-hooks/exhaustive-deps
+
   const connectNativeSolana = async () => {
     setWalletError(null);
     if (typeof window === 'undefined') return;
@@ -116,6 +223,7 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
 
   const handleLogOut = async () => {
     setNativeAddress(null);
+    setIsAuthenticated(false);
     if (typeof window !== 'undefined') {
       localStorage.removeItem('real_climber_native_wallet');
       const solana = (window as any).solana || (window as any).phantom?.solana;
@@ -150,6 +258,8 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
         isCheckingBalance,
         isEligible,
         refetchBalance,
+        isAuthenticated,
+        isAuthenticating,
       }}
     >
       {children}

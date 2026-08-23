@@ -280,20 +280,25 @@ export default function Home() {
 
     // Reset payment state
     setPaymentError(null);
-    setPaymentStatus('pending');
 
     try {
-      // Step 1: Build and send the dynamic RWD payment transaction
-      const { txSignature } = await payGameFee(primaryWallet.address, GAME_FEE);
-      console.log('Payment tx submitted:', txSignature);
+      let txSignature = 'FREE_PLAY';
 
-      // Step 2: Server verifies the finalized transaction and creates session
+      if (GAME_FEE > 0) {
+        // Step 1: Build and send the dynamic RWD payment transaction
+        setPaymentStatus('pending');
+        const paymentResult = await payGameFee(primaryWallet.address, GAME_FEE);
+        txSignature = paymentResult.txSignature;
+        console.log('Payment tx submitted:', txSignature);
+      }
+
+      // Step 2: Server verifies the transaction (or creates free session) and creates session
       setPaymentStatus('confirming');
 
       const res = await fetch('/api/game/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ txSignature }),
+        body: JSON.stringify({ txSignature, freePlay: GAME_FEE <= 0 }),
       });
       const data = await res.json();
 
@@ -539,7 +544,9 @@ export default function Home() {
                               : paymentStatus === 'confirming'
                                 ? 'CONFIRMING PAYMENT...'
                                 : isEligible
-                                  ? `PLAY (${GAME_FEE} RWD)`
+                                  ? GAME_FEE > 0
+                                    ? `PLAY (${GAME_FEE} RWD)`
+                                    : 'PLAY (FREE)'
                                   : 'NEED $RWD TO PLAY'}
                   </button>
                   {paymentError && paymentStatus === 'error' && (

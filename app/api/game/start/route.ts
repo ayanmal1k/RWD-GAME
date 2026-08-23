@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { db } from '@/lib/firebase';
-import { doc, getDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
+import { doc, getDoc, setDoc, runTransaction, serverTimestamp } from 'firebase/firestore';
 import { Connection, PublicKey } from '@solana/web3.js';
 import { getMint, TOKEN_PROGRAM_ID, TOKEN_2022_PROGRAM_ID } from '@solana/spl-token';
 import crypto from 'crypto';
@@ -46,14 +46,70 @@ export async function POST(request: Request) {
     const body = await request.json().catch(() => ({}));
     const { txSignature } = body;
 
+    // Load dynamic settings
+    const gameSettings = await getGameSettings();
+    const isFreePlay = gameSettings.gameFeeAmount <= 0;
+
+    // Dynamic Minimum RWD Holding Check (USD value on Mainnet, raw tokens on Devnet)
+    const requiredHolding = gameSettings.minRwdRequired;
+    if (requiredHolding > 0) {
+      const connection = new Connection(RPC_URL, 'confirmed');
+      const { fetchRwdTokenBalance } = await import('@/lib/solana');
+      const rwdBalance = await fetchRwdTokenBalance(walletAddress, connection);
+
+      if (isMainnet) {
+        const { fetchRwdTokenPriceUsd } = await import('@/lib/tokenPrice');
+        const tokenPrice = await fetchRwdTokenPriceUsd();
+        const userUsdValue = rwdBalance * tokenPrice;
+        if (userUsdValue < requiredHolding) {
+          return NextResponse.json(
+            {
+              error: `Access Denied: Wallet must hold at least $${requiredHolding.toFixed(2)} USD worth of $RWD tokens to play. Current holdings: $${userUsdValue.toFixed(2)} USD (${rwdBalance.toLocaleString()} $RWD @ $${tokenPrice.toFixed(8)}).`
+            },
+            { status: 403 }
+          );
+        }
+      } else {
+        if (rwdBalance < requiredHolding) {
+          return NextResponse.json(
+            {
+              error: `Access Denied: Wallet must hold at least ${requiredHolding.toLocaleString()} $RWD tokens to play on Devnet. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
+            },
+            { status: 403 }
+          );
+        }
+      }
+    }
+
+    // If game fee is 0, create session directly without requiring on-chain payment
+    if (isFreePlay) {
+      const sessionId = crypto.randomUUID();
+      const now = Date.now();
+      const expiresAt = now + SESSION_TTL_MS;
+
+      const sessionRef = doc(db, 'gameSessions', sessionId);
+      await setDoc(sessionRef, {
+        sessionId,
+        userAddress: walletAddress,
+        paymentTxSignature: 'FREE_PLAY',
+        status: 'ACTIVE',
+        createdAt: now,
+        expiresAt,
+      });
+
+      const token = createSessionToken(sessionId, walletAddress, expiresAt);
+      return NextResponse.json({ sessionId, token });
+    }
+
+    // For paid games, valid txSignature is required
     if (!txSignature || typeof txSignature !== 'string' || txSignature.length < 20) {
       return NextResponse.json(
-        { error: 'Valid txSignature is required' },
+        { error: 'Valid txSignature is required for paid game entry' },
         { status: 400 }
       );
     }
 
-    // 2. IDEMPOTENCY CHECK
+    // 2. IDEMPOTENCY CHECK FOR PAID ENTRY
     const existingPayment = await getDoc(doc(db, 'gamePayments', txSignature));
     if (existingPayment.exists()) {
       const payment = existingPayment.data();
@@ -98,8 +154,7 @@ export async function POST(request: Request) {
       }
     }
 
-    // 3. LOAD DYNAMIC SETTINGS & VERIFY TRANSACTION ON-CHAIN
-    const gameSettings = await getGameSettings();
+    // 3. VERIFY TRANSACTION ON-CHAIN
     const connection = new Connection(RPC_URL, 'confirmed');
     const treasuryWallet = getTreasuryWallet();
     const rwdMint = getRwdMint();
@@ -107,36 +162,6 @@ export async function POST(request: Request) {
     if (!treasuryWallet || !rwdMint) {
       console.error('[GAME/START] Treasury wallet or RWD mint not configured');
       return NextResponse.json({ error: 'Server configuration error' }, { status: 500 });
-    }
-
-    // Dynamic Minimum RWD Holding Check (USD value on Mainnet, raw tokens on Devnet)
-    const requiredHolding = gameSettings.minRwdRequired;
-    if (requiredHolding > 0) {
-      const { fetchRwdTokenBalance } = await import('@/lib/solana');
-      const rwdBalance = await fetchRwdTokenBalance(walletAddress, connection);
-
-      if (isMainnet) {
-        const { fetchRwdTokenPriceUsd } = await import('@/lib/tokenPrice');
-        const tokenPrice = await fetchRwdTokenPriceUsd();
-        const userUsdValue = rwdBalance * tokenPrice;
-        if (userUsdValue < requiredHolding) {
-          return NextResponse.json(
-            {
-              error: `Access Denied: Wallet must hold at least $${requiredHolding.toFixed(2)} USD worth of $RWD tokens to play. Current holdings: $${userUsdValue.toFixed(2)} USD (${rwdBalance.toLocaleString()} $RWD @ $${tokenPrice.toFixed(8)}).`
-            },
-            { status: 403 }
-          );
-        }
-      } else {
-        if (rwdBalance < requiredHolding) {
-          return NextResponse.json(
-            {
-              error: `Access Denied: Wallet must hold at least ${requiredHolding.toLocaleString()} $RWD tokens to play on Devnet. Current holdings: ${rwdBalance.toLocaleString()} $RWD.`
-            },
-            { status: 403 }
-          );
-        }
-      }
     }
 
     const verificationResult = await verifyPaymentTransaction(

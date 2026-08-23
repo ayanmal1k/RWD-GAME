@@ -628,7 +628,7 @@ export default function AdminPage() {
                 <div className="p-4 bg-gradient-to-r from-[#140b24] via-[#241340] to-[#140b24] border border-purple-500/35 rounded-2xl flex flex-wrap items-center justify-around gap-3 text-center">
                   <div className="space-y-0.5">
                     <span className="text-[9px] font-mono text-purple-300/70 uppercase block">Game Fee</span>
-                    <span className="font-press-start text-xs text-fuchsia-300">{gameFeeAmount} $RWD</span>
+                    <span className="font-press-start text-xs text-fuchsia-300">{gameFeeAmount > 0 ? `${gameFeeAmount} $RWD` : 'FREE PLAY'}</span>
                   </div>
                   <div className="w-px h-8 bg-purple-500/30 hidden sm:block" />
                   <div className="space-y-0.5">

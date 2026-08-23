@@ -29,11 +29,21 @@ export async function POST(request: Request) {
     } = body;
 
     const isLeaderboardEnabled = leaderboardEnabled !== undefined ? Boolean(leaderboardEnabled) : (enabled !== undefined ? Boolean(enabled) : true);
-    const parsedGameFee = typeof gameFeeAmount === 'number' && gameFeeAmount >= 0 ? gameFeeAmount : Number(gameFeeAmount) || DEFAULT_GAME_SETTINGS.gameFeeAmount;
-    const parsedMinRwd = typeof minRwdRequired === 'number' && minRwdRequired >= 0 ? minRwdRequired : Number(minRwdRequired) || 0;
-    const parsedMinRwdUsd = typeof minRwdUsdRequired === 'number' && minRwdUsdRequired >= 0 ? minRwdUsdRequired : Number(minRwdUsdRequired) || DEFAULT_GAME_SETTINGS.minRwdUsdRequired;
-    const parsedCoinsPerToken = typeof coinsPerToken === 'number' && coinsPerToken > 0 ? coinsPerToken : Number(coinsPerToken) || DEFAULT_GAME_SETTINGS.coinsPerToken;
-    const parsedMinWithdrawCoins = typeof minWithdrawCoins === 'number' && minWithdrawCoins >= 0 ? minWithdrawCoins : Number(minWithdrawCoins) || DEFAULT_GAME_SETTINGS.minWithdrawCoins;
+    const parsedGameFee = typeof gameFeeAmount === 'number' && !isNaN(gameFeeAmount) && gameFeeAmount >= 0 
+      ? gameFeeAmount 
+      : (!isNaN(Number(gameFeeAmount)) && Number(gameFeeAmount) >= 0 ? Number(gameFeeAmount) : DEFAULT_GAME_SETTINGS.gameFeeAmount);
+    const parsedMinRwd = typeof minRwdRequired === 'number' && !isNaN(minRwdRequired) && minRwdRequired >= 0 
+      ? minRwdRequired 
+      : (!isNaN(Number(minRwdRequired)) && Number(minRwdRequired) >= 0 ? Number(minRwdRequired) : 0);
+    const parsedMinRwdUsd = typeof minRwdUsdRequired === 'number' && !isNaN(minRwdUsdRequired) && minRwdUsdRequired >= 0 
+      ? minRwdUsdRequired 
+      : (!isNaN(Number(minRwdUsdRequired)) && Number(minRwdUsdRequired) >= 0 ? Number(minRwdUsdRequired) : parsedMinRwd);
+    const parsedCoinsPerToken = typeof coinsPerToken === 'number' && !isNaN(coinsPerToken) && coinsPerToken > 0 
+      ? coinsPerToken 
+      : (!isNaN(Number(coinsPerToken)) && Number(coinsPerToken) > 0 ? Number(coinsPerToken) : DEFAULT_GAME_SETTINGS.coinsPerToken);
+    const parsedMinWithdrawCoins = typeof minWithdrawCoins === 'number' && !isNaN(minWithdrawCoins) && minWithdrawCoins >= 0 
+      ? minWithdrawCoins 
+      : (!isNaN(Number(minWithdrawCoins)) && Number(minWithdrawCoins) >= 0 ? Number(minWithdrawCoins) : DEFAULT_GAME_SETTINGS.minWithdrawCoins);
 
     const updatedSettings = {
       gameFeeAmount: parsedGameFee,

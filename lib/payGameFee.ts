@@ -80,7 +80,8 @@ export async function payGameFee(playerAddress: string, customFeeAmount?: number
 
   const feeAmount = typeof customFeeAmount === 'number' && customFeeAmount >= 0 ? customFeeAmount : getGameFeeAmount();
   if (feeAmount <= 0) {
-    throw new Error('Invalid game fee amount.');
+    // 0 fee means free to play — no on-chain transaction needed
+    return { txSignature: 'FREE_PLAY' };
   }
 
   const provider = getWalletProvider();

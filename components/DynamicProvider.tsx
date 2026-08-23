@@ -150,8 +150,8 @@ function DynamicWalletBridge({ children }: { children: React.ReactNode }) {
       // (Trust, Phantom, Solflare, etc.) instead of always using window.solana.
       const currentDynamicWallet = dynamicPrimaryWalletRef.current;
       if (currentDynamicWallet && isSolanaWallet(currentDynamicWallet)) {
-        const connector = currentDynamicWallet.connector;
-        const sig = await connector.signMessage(messageToSign);
+        const connector: any = currentDynamicWallet.connector;
+        const sig = connector?.signMessage ? await connector.signMessage(messageToSign) : await (currentDynamicWallet as any).signMessage?.(messageToSign);
         if (!sig) {
           throw new Error('Wallet signing returned empty result');
         }

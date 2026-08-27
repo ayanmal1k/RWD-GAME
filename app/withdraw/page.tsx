@@ -40,7 +40,7 @@ export default function WithdrawPage() {
   const address = primaryWallet?.address;
 
   const coinsPerToken = gameSettings.coinsPerToken || 10;
-  const minWithdraw = gameSettings.minWithdrawCoins || 1000;
+  const minWithdraw = typeof gameSettings.minWithdrawCoins === 'number' ? gameSettings.minWithdrawCoins : 1000;
   const minHolding = gameSettings.minRwdRequired;
   const minHoldingUsd = gameSettings.minRwdUsdRequired ?? 10;
 

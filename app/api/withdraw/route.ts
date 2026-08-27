@@ -62,7 +62,7 @@ export async function POST(request: Request) {
     }
 
     const coinsToExchange = Number(amountCoins);
-    const minWithdraw = gameSettings.minWithdrawCoins || 1000;
+    const minWithdraw = typeof gameSettings.minWithdrawCoins === 'number' ? gameSettings.minWithdrawCoins : 1000;
 
     if (isNaN(coinsToExchange) || coinsToExchange < minWithdraw) {
       return NextResponse.json({ error: `Minimum withdrawal threshold is ${minWithdraw.toLocaleString()} coins` }, { status: 400 });

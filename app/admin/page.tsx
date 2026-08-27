@@ -241,7 +241,7 @@ export default function AdminPage() {
           minRwdRequired: Number(minRwdRequired) || 0,
           minRwdUsdRequired: Number(minRwdUsdRequired) || 0,
           coinsPerToken: Number(coinsPerToken) || 10,
-          minWithdrawCoins: Number(minWithdrawCoins) || 1000,
+          minWithdrawCoins: !isNaN(Number(minWithdrawCoins)) && Number(minWithdrawCoins) >= 0 ? Number(minWithdrawCoins) : 1000,
         }),
       });
 
@@ -554,8 +554,8 @@ export default function AdminPage() {
                     </label>
                     <input
                       type="number"
-                      min="100"
-                      step="100"
+                      min="1"
+                      step="1"
                       value={minWithdrawCoins}
                       onChange={(e) => setMinWithdrawCoins(Number(e.target.value))}
                       required

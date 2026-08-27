@@ -313,7 +313,7 @@ export default function WithdrawPage() {
                   <input
                     type="number"
                     min={minWithdraw}
-                    step="100"
+                    step="1"
                     value={exchangeCoins}
                     onChange={(e) => setExchangeCoins(e.target.value)}
                     className="w-full bg-transparent font-mono text-xl font-bold text-purple-100 focus:outline-none placeholder-purple-500/30"
@@ -388,7 +388,7 @@ export default function WithdrawPage() {
             {/* Submit Button */}
             <button
               type="submit"
-              disabled={isSubmitting || coinsNum < 1000 || coinsNum > bankCoins || !address || !isEligible || isCheckingBalance}
+              disabled={isSubmitting || isCheckingBalance || (!!address && !isEligible)}
               className={`w-full py-4 font-bold font-press-start text-xs sm:text-sm rounded-2xl border-2 transition-all flex items-center justify-center gap-2 ${!address
                 ? 'bg-gradient-to-r from-purple-600 via-fuchsia-500 to-purple-600 text-white border-fuchsia-300 shadow-[0_0_25px_rgba(168,85,247,0.6)] hover:shadow-[0_0_35px_rgba(217,70,239,0.9)] cursor-pointer'
                 : isCheckingBalance
@@ -405,9 +405,9 @@ export default function WithdrawPage() {
                   ? 'CONNECT WALLET TO WITHDRAW'
                   : isCheckingBalance
                     ? 'VERIFYING $RWD BALANCE...'
-                    : isEligible
-                      ? 'EXCHANGE & WITHDRAW NOW'
-                      : `LOCKED (NEED ${MIN_REAL_REQUIRED.toLocaleString()} $RWD)`}
+                    : !isEligible
+                      ? (isMainnet ? `LOCKED (NEED $${minHoldingUsd.toFixed(2)} $RWD)` : `LOCKED (NEED ${minHolding.toLocaleString()} $RWD)`)
+                      : 'EXCHANGE & WITHDRAW NOW'}
             </button>
           </form>
         </div>
